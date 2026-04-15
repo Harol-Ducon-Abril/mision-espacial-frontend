@@ -35,7 +35,44 @@ axios.interceptors.response.use(
 );
 
 // ==========================================
-// 🚀 COMPONENTE PRINCIPAL: VISOR ESPACIAL
+// 🌌 COMPONENTE: FONDO ESTELAR GLOBAL
+// ==========================================
+const FondoEstrellas = () => {
+  // Genera 70 estrellas para toda la pantalla
+  const estrellas = [...Array(70)].map((_, i) => (
+    <motion.div
+      key={i}
+      style={{
+        position: 'fixed',
+        width: Math.random() * 3 + 'px',
+        height: Math.random() * 3 + 'px',
+        background: '#fff',
+        borderRadius: '50%',
+        top: Math.random() * 100 + '%',
+        left: Math.random() * 100 + '%',
+        boxShadow: '0 0 8px #fff, 0 0 15px #66fcf1',
+        zIndex: 0, // Bien al fondo
+        pointerEvents: 'none' // Para que no estorben al dar clic
+      }}
+      animate={{ opacity: [0, 1, 0], scale: [1, 1.3, 1] }}
+      transition={{ 
+        duration: Math.random() * 4 + 2, 
+        repeat: Infinity, 
+        ease: "easeInOut", 
+        delay: Math.random() * 5 
+      }}
+    />
+  ));
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+      {estrellas}
+    </div>
+  );
+};
+
+// ==========================================
+// 🚀 COMPONENTE: VISOR ESPACIAL
 // ==========================================
 function VisorEspacial() {
   const [progreso, setProgreso] = useState(null);
@@ -64,7 +101,6 @@ function VisorEspacial() {
   }, []);
 
   const total = progreso && progreso.total_points !== undefined ? parseInt(progreso.total_points) : 0;
-  
   const cofreGenerico = "https://img.freepik.com/vector-premium/cofre-tesoro-cerrado-icono-juego-3d-aislado_110534-436.jpg";
 
   const obtenerPremioGanado = () => {
@@ -87,26 +123,19 @@ function VisorEspacial() {
     return filas;
   };
 
-  if (cargando) return <div style={{ textAlign: 'center', color: '#66fcf1', marginTop: '100px', fontSize: '24px', fontWeight: 'bold' }}>📡 ESCANEANDO SECTOR...</div>;
+  if (cargando) return <div style={{ textAlign: 'center', color: '#66fcf1', marginTop: '100px', fontSize: '24px', fontWeight: 'bold', zIndex: 10, position: 'relative' }}>📡 ESCANEANDO SECTOR...</div>;
 
   return (
-    <div style={{ position: 'relative', overflowX: 'hidden', paddingBottom: '120px', background: 'radial-gradient(circle at center, #1b2735 0%, #090a0f 100%)', minHeight: '100vh' }}>
-      {mostrarPremioFinal && total >= 12 && <Confetti numberOfPieces={500} gravity={0.15} />}
+    <div style={{ position: 'relative', paddingBottom: '120px', zIndex: 10 }}>
+      {mostrarPremioFinal && total >= 12 && <Confetti numberOfPieces={500} gravity={0.15} style={{ zIndex: 3000 }} />}
 
-      {/* --- ENCABEZADO RESPONSIVE --- */}
       <div style={{ padding: '40px 15px', textAlign: 'center' }}>
         <motion.h1 
           animate={{ scale: [1, 1.05, 1], textShadow: ["0 0 10px #66fcf1", "0 0 30px #66fcf1", "0 0 10px #66fcf1"] }}
           transition={{ duration: 3, repeat: Infinity }}
           style={{ 
-            color: '#66fcf1', 
-            fontSize: 'clamp(28px, 8vw, 50px)', 
-            lineHeight: '1.5', // <-- ESTO EVITA QUE SE MONTEN LAS LETRAS VERTICALMENTE
-            margin: '0 auto', 
-            fontWeight: '900', 
-            letterSpacing: '2px',
-            wordWrap: 'break-word',
-            maxWidth: '95%'
+            color: '#66fcf1', fontSize: 'clamp(28px, 8vw, 50px)', lineHeight: '1.2', 
+            margin: '0 auto', fontWeight: '900', letterSpacing: '2px', wordWrap: 'break-word', maxWidth: '95%'
           }}
         >
           RUTA DE EXPLORACIÓN
@@ -118,11 +147,9 @@ function VisorEspacial() {
               COMANDANTE {progreso.kid_name || 'PILOTO'}
             </h2>
             <div style={{ 
-              fontSize: 'clamp(30px, 8vw, 40px)', // <-- NÚMEROS ADAPTABLES
-              color: '#0b0c10', fontWeight: '900', background: '#66fcf1', 
-              display: 'inline-block', padding: '10px clamp(20px, 5vw, 50px)', 
-              borderRadius: '50px', boxShadow: '0 0 30px #66fcf1', 
-              border: '4px solid #fff', marginTop: '10px' 
+              fontSize: '40px', color: '#0b0c10', fontWeight: '900', background: '#66fcf1', 
+              display: 'inline-block', padding: '10px 40px', borderRadius: '50px', 
+              boxShadow: '0 0 30px #66fcf1', border: '4px solid #fff', marginTop: '10px' 
             }}>
               {total} / 48
             </div>
@@ -130,119 +157,95 @@ function VisorEspacial() {
         )}
       </div>
 
-      {/* --- CUERPO: RUTA DE CÍRCULOS (AHORA SÍ RESPONSIVE) --- */}
-      <div style={{ 
-        display: 'flex', flexDirection: 'column', gap: '30px', 
-        alignItems: 'center', maxWidth: '1000px', margin: '0 auto', 
-        padding: '10px 15px 40px 15px',
-        width: '100%', boxSizing: 'border-box'
-      }}>
-        {crearRutaZigZag().map((fila, indiceFila) => (
-          <div key={indiceFila} style={{ 
-            display: 'flex', 
-            flexWrap: 'wrap', // <-- MAGIA: LOS CÍRCULOS BAJAN SI NO CABEN
-            justifyContent: 'center', 
-            gap: 'clamp(10px, 3vw, 30px)', // <-- ESPACIO DINÁMICO ENTRE CÍRCULOS
-            width: '100%'
-          }}>
-            {fila.map((num) => {
-              const esEstacion = [12, 24, 36, 48].includes(num);
-              const yaPasó = num <= total;
-              const esActual = (total === 0 && num === 1) || (num === total);
+      {/* --- EL MAPA: RESTAURADO A TAMAÑO ORIGINAL CON SCROLL LATERAL PARA MÓVIL --- */}
+      <div style={{ width: '100%', overflowX: 'auto', paddingBottom: '30px' }}>
+        <div style={{ 
+          display: 'flex', flexDirection: 'column', gap: '40px', 
+          alignItems: 'center', minWidth: '850px', /* <-- EVITA QUE SE APLASTEN */
+          margin: '0 auto', padding: '10px 20px' 
+        }}>
+          {crearRutaZigZag().map((fila, indiceFila) => (
+            <div key={indiceFila} style={{ display: 'flex', gap: '30px', justifyContent: 'center' }}>
+              {fila.map((num) => {
+                const esEstacion = [12, 24, 36, 48].includes(num);
+                const yaPasó = num <= total;
+                const esActual = (total === 0 && num === 1) || (num === total);
 
-              return (
-                <div key={num} style={{ 
-                  position: 'relative', 
-                  // <-- CÍRCULOS QUE SE ENCOGEN EN CELULAR
-                  width: 'clamp(55px, 15vw, 80px)', 
-                  height: 'clamp(55px, 15vw, 80px)', 
-                  display: 'flex', justifyContent: 'center', alignItems: 'center' 
-                }}>
-                  <AnimatePresence>
-                    {hoveredNode === num && esEstacion && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: -20 }} exit={{ opacity: 0 }}
-                        style={{ position: 'absolute', top: '-65px', width: '120px', background: yaPasó ? '#4caf50' : '#ffaa00', color: 'white', padding: '8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', zIndex: 300, textAlign: 'center', boxShadow: '0 8px 20px rgba(0,0,0,0.6)' }}
-                      >
-                        {yaPasó ? "🏆 ¡OBTENIDO!" : `Faltan ${num - total}`}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                return (
+                  <div key={num} style={{ position: 'relative', width: '80px', height: '80px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <AnimatePresence>
+                      {hoveredNode === num && esEstacion && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: -20 }} exit={{ opacity: 0 }}
+                          style={{ position: 'absolute', top: '-65px', width: '140px', background: yaPasó ? '#4caf50' : '#ffaa00', color: 'white', padding: '10px', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', zIndex: 300, textAlign: 'center', boxShadow: '0 8px 20px rgba(0,0,0,0.6)' }}
+                        >
+                          {yaPasó ? "🏆 ¡PREMIO OBTENIDO!" : `🚀 Faltan ${num - total} puntos`}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
-                  <motion.div 
-                    onMouseEnter={() => setHoveredNode(num)}
-                    onMouseLeave={() => setHoveredNode(null)}
-                    whileHover={{ scale: 1.15, rotate: esEstacion ? 0 : 10 }}
-                    style={{ 
-                      width: '100%', height: '100%', // <-- OCUPA EL 100% DE SU CONTENEDOR FLEXIBLE
-                      borderRadius: esEstacion ? '50%' : '45% 55% 50% 50% / 50% 45% 55% 50%', 
-                      background: esEstacion 
-                        ? 'radial-gradient(circle at 30% 30%, #ffcc00, #ff8c00 60%, #ff4500)' 
-                        : (yaPasó ? 'radial-gradient(circle at 30% 30%, #66fcf1, #1f2833)' : '#1a1a1a'),
-                      border: yaPasó ? (esEstacion ? '4px solid #fff' : '3px solid #66fcf1') : '2px solid #333',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 'clamp(16px, 5vw, 24px)', // <-- LETRA DEL CÍRCULO ADAPTABLE
-                      fontWeight: '900', color: yaPasó ? '#fff' : '#444',
-                      boxShadow: yaPasó ? `0 0 15px ${esEstacion ? 'rgba(255, 140, 0, 0.7)' : 'rgba(102, 252, 241, 0.7)'}` : 'none',
-                      cursor: 'pointer', position: 'relative'
-                    }}
-                  >
-                    {esEstacion && <div style={{ position: 'absolute', width: '130%', height: '30%', border: '3px solid rgba(255, 255, 255, 0.4)', borderRadius: '50%', transform: 'rotate(-25deg)', pointerEvents: 'none' }} />}
-                    <span style={{ position: 'relative', zIndex: 2 }}>{num}</span>
-                  </motion.div>
-
-                  {/* --- ASTRONAUTA --- */}
-                  {esActual && progreso && (
-                    <motion.div
-                      layoutId="avatarAstronauta"
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{ opacity: 1, scale: 1, y: -60 }} 
-                      transition={{ type: 'spring', damping: 12, stiffness: 100 }}
+                    <motion.div 
+                      onMouseEnter={() => setHoveredNode(num)}
+                      onMouseLeave={() => setHoveredNode(null)}
+                      whileHover={{ scale: 1.25, rotate: esEstacion ? 0 : 10 }}
                       style={{ 
-                        position: 'absolute', zIndex: 500, width: '60px', 
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', 
-                        pointerEvents: 'none', left: '50%', transform: 'translateX(-50%)' // <-- CENTRADO PERFECTO SIEMPRE
+                        width: '80px', height: '80px', /* <-- TAMAÑO ORIGINAL PERFECTO */
+                        borderRadius: esEstacion ? '50%' : '45% 55% 50% 50% / 50% 45% 55% 50%', 
+                        background: esEstacion 
+                          ? 'radial-gradient(circle at 30% 30%, #ffcc00, #ff8c00 60%, #ff4500)' 
+                          : (yaPasó ? 'radial-gradient(circle at 30% 30%, #66fcf1, #1f2833)' : '#1a1a1a'),
+                        border: yaPasó ? (esEstacion ? '4px solid #fff' : '3px solid #66fcf1') : '2px solid #333',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '24px', fontWeight: '900', color: yaPasó ? '#fff' : '#444',
+                        boxShadow: yaPasó ? `0 0 25px ${esEstacion ? 'rgba(255, 140, 0, 0.7)' : 'rgba(102, 252, 241, 0.7)'}` : 'none',
+                        cursor: 'pointer', position: 'relative'
                       }}
                     >
-                      <motion.div animate={{ y: [0, -8, 0], rotate: [-1, 1, -1] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}>
-                        <div style={{ width: '55px', height: '50px', background: '#fff', borderRadius: '50% 50% 40% 40%', position: 'relative', border: '2px solid #ddd', boxShadow: '0 8px 20px rgba(102, 252, 241, 0.6)' }}>
-                          <div style={{ width: '40px', height: '32px', background: '#000', borderRadius: '30% 30% 45% 45%', margin: '6px auto', border: '1.5px solid #66fcf1', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                            {progreso.kid_photo_url ? (
-                              <img src={progreso.kid_photo_url} alt="Piloto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                              <span style={{ fontSize: '18px' }}>👨‍🚀</span>
-                            )}
-                          </div>
-                        </div>
-                        <div style={{ width: '38px', height: '30px', background: '#f5f5f5', borderRadius: '10px', margin: '-4px auto 0', border: '2px solid #ddd' }} />
-                      </motion.div>
+                      {esEstacion && <div style={{ position: 'absolute', width: '120px', height: '25px', border: '4px solid rgba(255, 255, 255, 0.4)', borderRadius: '50%', transform: 'rotate(-25deg)', pointerEvents: 'none' }} />}
+                      <span style={{ position: 'relative', zIndex: 2 }}>{num}</span>
                     </motion.div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+
+                    {/* --- ASTRONAUTA --- */}
+                    {esActual && progreso && (
+                      <motion.div
+                        layoutId="avatarAstronauta"
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: 1, scale: 1, y: -72 }} 
+                        transition={{ type: 'spring', damping: 12, stiffness: 100 }}
+                        style={{ position: 'absolute', zIndex: 500, width: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'none', left: '50%', transform: 'translateX(-50%)' }}
+                      >
+                        <motion.div animate={{ y: [0, -8, 0], rotate: [-1, 1, -1] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}>
+                          <div style={{ width: '65px', height: '60px', background: '#fff', borderRadius: '50% 50% 40% 40%', position: 'relative', border: '2.5px solid #ddd', boxShadow: '0 8px 20px rgba(102, 252, 241, 0.6)' }}>
+                            <div style={{ width: '50px', height: '40px', background: '#000', borderRadius: '30% 30% 45% 45%', margin: '8px auto', border: '1.5px solid #66fcf1', overflow: 'hidden', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                              {progreso.kid_photo_url ? (
+                                <img src={progreso.kid_photo_url} alt="Piloto" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                <span style={{ fontSize: '22px' }}>👨‍🚀</span>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ width: '44px', height: '36px', background: '#f5f5f5', borderRadius: '12px', margin: '-4px auto 0', border: '2.5px solid #ddd' }} />
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* --- BOTÓN INFERIOR RESPONSIVE --- */}
       <div style={{ position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, width: '90%', maxWidth: '350px' }}>
         <motion.button 
           whileHover={{ scale: 1.05, boxShadow: '0 0 30px #4caf50' }} whileTap={{ scale: 0.95 }}
           onClick={() => setMostrarPremioFinal(true)}
-          style={{ 
-            width: '100%', padding: '15px 10px', 
-            background: 'linear-gradient(90deg, #4caf50, #2e7d32)', color: 'white', 
-            border: '3px solid #81c784', borderRadius: '60px', cursor: 'pointer', 
-            fontWeight: '900', fontSize: 'clamp(14px, 4vw, 20px)', letterSpacing: '1px', 
-            boxShadow: '0 10px 25px rgba(0,0,0,0.6)' 
-          }}
+          style={{ width: '100%', padding: '15px 10px', background: 'linear-gradient(90deg, #4caf50, #2e7d32)', color: 'white', border: '3px solid #81c784', borderRadius: '60px', cursor: 'pointer', fontWeight: '900', fontSize: 'clamp(16px, 4vw, 20px)', letterSpacing: '1px', boxShadow: '0 10px 25px rgba(0,0,0,0.6)' }}
         >
           🏁 REVELAR PREMIO
         </motion.button>
       </div>
 
-      {/* Modal de Premio (Se mantiene igual, ya está centrado) */}
       <AnimatePresence>
         {mostrarPremioFinal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.96)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
@@ -284,70 +287,26 @@ function Navigation() {
     navigate('/');
   };
 
-  const createNavStars = (num) => {
-    return [...Array(num)].map((_, i) => (
-      <motion.div
-        key={i}
-        style={{
-          position: 'absolute',
-          width: Math.random() * 2 + 'px',
-          height: Math.random() * 2 + 'px',
-          background: '#fff',
-          borderRadius: '50%',
-          top: Math.random() * 100 + '%',
-          left: Math.random() * 100 + '%',
-          boxShadow: '0 0 5px #fff, 0 0 10px #66fcf1',
-        }}
-        animate={{ opacity: [0, 1, 0], scale: [1, 1.2, 1] }}
-        transition={{ duration: Math.random() * 3 + 2, repeat: Infinity, ease: "easeInOut", delay: Math.random() * 5 }}
-      />
-    ));
-  };
-
   return (
     <nav style={{ 
       padding: '15px', 
-      background: 'linear-gradient(180deg, #1b2735 0%, #0b0c10 100%)', 
-      borderBottom: '2px solid #66fcf1', 
+      background: 'transparent', // Para que se vean las estrellas globales detrás
+      borderBottom: '2px solid rgba(102, 252, 241, 0.5)', 
       display: 'flex', 
       flexWrap: 'wrap', 
       justifyContent: 'space-evenly', 
       alignItems: 'center',
       gap: '10px', 
-      boxShadow: '0 4px 20px rgba(102, 252, 241, 0.2)', 
       position: 'relative',
-      overflow: 'hidden', 
-      zIndex: 1000
+      zIndex: 100 // Por encima de las estrellas
     }}>
-      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}>
-        {createNavStars(30)}
-      </div>
-
-      <Link to="/explorar" style={{ 
-        color: '#66fcf1', textDecoration: 'none', 
-        fontSize: 'clamp(12px, 3.5vw, 16px)', fontWeight: '900',
-        textShadow: '0 0 10px rgba(102, 252, 241, 0.5)', 
-        position: 'relative', zIndex: 1
-      }}>
+      <Link to="/explorar" style={{ color: '#66fcf1', textDecoration: 'none', fontSize: 'clamp(12px, 3.5vw, 16px)', fontWeight: '900', textShadow: '0 0 10px rgba(102, 252, 241, 0.5)' }}>
         🛰️ EXPLORACIÓN
       </Link>
-      
-      <Link to="/papas" style={{ 
-        color: '#ffaa00', textDecoration: 'none', 
-        fontSize: 'clamp(12px, 3.5vw, 16px)', fontWeight: '900',
-        textShadow: '0 0 10px rgba(255, 170, 0, 0.5)', 
-        position: 'relative', zIndex: 1
-      }}>
+      <Link to="/papas" style={{ color: '#ffaa00', textDecoration: 'none', fontSize: 'clamp(12px, 3.5vw, 16px)', fontWeight: '900', textShadow: '0 0 10px rgba(255, 170, 0, 0.5)' }}>
         🛠️ COMANDO
       </Link>
-      
-      <button onClick={cerrarSesion} style={{ 
-        background: 'rgba(255, 76, 76, 0.1)', border: '1px solid #ff4c4c', 
-        color: '#ff4c4c', cursor: 'pointer', borderRadius: '5px', 
-        padding: '8px 15px', fontSize: 'clamp(11px, 3vw, 13px)', 
-        fontWeight: 'bold', boxShadow: '0 0 10px rgba(255, 76, 76, 0.3)',
-        position: 'relative', zIndex: 1
-      }}>
+      <button onClick={cerrarSesion} style={{ background: 'rgba(255, 76, 76, 0.1)', border: '1px solid #ff4c4c', color: '#ff4c4c', cursor: 'pointer', borderRadius: '5px', padding: '8px 15px', fontSize: 'clamp(11px, 3vw, 13px)', fontWeight: 'bold' }}>
         SALIR
       </button>
     </nav>
@@ -362,27 +321,39 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <BrowserRouter>
+      {/* --- AQUÍ ESTÁ LA MAGIA: EL CONTENEDOR PRINCIPAL --- */}
       <div style={{ 
-        backgroundColor: '#0b0c10', minHeight: '100vh', 
-        display: 'flex', flexDirection: 'column', 
-        fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif' 
+        backgroundColor: '#0b0c10', 
+        background: 'radial-gradient(circle at center, #1b2735 0%, #090a0f 100%)', // Fondo base
+        minHeight: '100vh', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+        position: 'relative' // Necesario para que las estrellas se fijen bien
       }}>
-        <Navigation />
         
-        <div style={{ flex: 1 }}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/registro" element={<Registro />} />
-            <Route path="/recuperar" element={<RecuperarPassword />} />
-            <Route path="/explorar" element={<ProtectedRoute><VisorEspacial /></ProtectedRoute>} />
-            <Route path="/papas" element={<ProtectedRoute><PanelPapas /></ProtectedRoute>} />
-            <Route path="/premios" element={<ProtectedRoute><ConfigPremios /></ProtectedRoute>} /> 
-            <Route path="/registro-piloto" element={<ProtectedRoute><RegistroPiloto /></ProtectedRoute>} />
-          </Routes>
-        </div>
+        {/* LAS ESTRELLAS GLOBALES ESTÁN AQUÍ */}
+        <FondoEstrellas />
 
-        <Footer /> 
+        {/* TODO EL CONTENIDO TIENE Z-INDEX MÁS ALTO PARA ESTAR SOBRE LAS ESTRELLAS */}
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', flex: 1 }}>
+          <Navigation />
+          
+          <div style={{ flex: 1 }}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/registro" element={<Registro />} />
+              <Route path="/recuperar" element={<RecuperarPassword />} />
+              <Route path="/explorar" element={<ProtectedRoute><VisorEspacial /></ProtectedRoute>} />
+              <Route path="/papas" element={<ProtectedRoute><PanelPapas /></ProtectedRoute>} />
+              <Route path="/premios" element={<ProtectedRoute><ConfigPremios /></ProtectedRoute>} /> 
+              <Route path="/registro-piloto" element={<ProtectedRoute><RegistroPiloto /></ProtectedRoute>} />
+            </Routes>
+          </div>
+
+          <Footer /> 
+        </div>
       </div>
     </BrowserRouter>
   );
