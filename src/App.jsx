@@ -324,7 +324,7 @@ function App() {
           </Routes>
         </div>
 
-        {/* 4. INSERTAMOS EL COMPONENTE FOOTER AL FINAL */}
+       
         <Footer /> 
       </div>
     </BrowserRouter>
