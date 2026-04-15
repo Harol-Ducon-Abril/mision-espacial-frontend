@@ -226,6 +226,7 @@ function VisorEspacial() {
   );
 }
 
+// --- NAVEGACIÓN CORREGIDA: RESPONSIVE Y GALÁCTICA ---
 function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -240,10 +241,53 @@ function Navigation() {
   };
 
   return (
-    <nav style={{ padding: '18px', backgroundColor: '#111', borderBottom: '2px solid #45a29e', display: 'flex', justifyContent: 'center', gap: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.6)', position: 'relative' }}>
-      <Link to="/explorar" style={{ color: '#66fcf1', textDecoration: 'none', fontSize: '18px', fontWeight: '900' }}>🛰️ RUTA DE EXPLORACION</Link>
-      <Link to="/papas" style={{ color: '#ffaa00', textDecoration: 'none', fontSize: '18px', fontWeight: '900' }}>🛠️ COMANDO CENTRAL</Link>
-      <button onClick={cerrarSesion} style={{ background: 'transparent', border: '1px solid #ff4c4c', color: '#ff4c4c', cursor: 'pointer', borderRadius: '5px', padding: '5px 10px', fontSize: '12px', fontWeight: 'bold' }}>SALIR</button>
+    <nav style={{ 
+      padding: '15px 10px', 
+      background: 'radial-gradient(circle at top, #1b2735 0%, #090a0f 100%)', // Fondo Galáctico
+      borderBottom: '2px solid #66fcf1', // Borde neón
+      display: 'flex', 
+      flexWrap: 'wrap', // <--- Clave: Permite que los elementos bajen si no caben
+      justifyContent: 'center', 
+      alignItems: 'center',
+      gap: 'clamp(10px, 4vw, 30px)', // Espaciado dinámico según la pantalla
+      boxShadow: '0 4px 20px rgba(102, 252, 241, 0.2)', // Resplandor inferior
+      position: 'relative' 
+    }}>
+      <Link to="/explorar" style={{ 
+        color: '#66fcf1', 
+        textDecoration: 'none', 
+        fontSize: 'clamp(13px, 3.5vw, 18px)', // El texto se achica en celulares
+        fontWeight: '900',
+        textShadow: '0 0 10px rgba(102, 252, 241, 0.5)', // Brillo del texto
+        textAlign: 'center'
+      }}>
+        🛰️ RUTA DE EXPLORACIÓN
+      </Link>
+      
+      <Link to="/papas" style={{ 
+        color: '#ffaa00', 
+        textDecoration: 'none', 
+        fontSize: 'clamp(13px, 3.5vw, 18px)', 
+        fontWeight: '900',
+        textShadow: '0 0 10px rgba(255, 170, 0, 0.5)', 
+        textAlign: 'center'
+      }}>
+        🛠️ COMANDO CENTRAL
+      </Link>
+      
+      <button onClick={cerrarSesion} style={{ 
+        background: 'rgba(255, 76, 76, 0.1)', // Fondo semi-transparente rojo
+        border: '1px solid #ff4c4c', 
+        color: '#ff4c4c', 
+        cursor: 'pointer', 
+        borderRadius: '5px', 
+        padding: '6px 14px', 
+        fontSize: 'clamp(11px, 3vw, 13px)', 
+        fontWeight: 'bold',
+        boxShadow: '0 0 10px rgba(255, 76, 76, 0.3)' // Resplandor rojo
+      }}>
+        SALIR
+      </button>
     </nav>
   );
 }
