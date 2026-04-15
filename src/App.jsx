@@ -12,7 +12,7 @@ import Home from './components/Home';
 import Login from './components/Login';
 import Registro from './components/Registro';
 import RecuperarPassword from './components/RecuperarPassword';
-import Footer from './components/Footer'; // <--- 1. IMPORTACIÓN AGREGADA
+import Footer from './components/Footer';
 
 // --- CONFIGURACIÓN GLOBAL DE AXIOS ---
 axios.interceptors.request.use((config) => {
@@ -91,17 +91,25 @@ function VisorEspacial() {
       {mostrarPremioFinal && total >= 12 && <Confetti numberOfPieces={500} gravity={0.15} />}
 
       <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+        {/* --- TÍTULO ARREGLADO (RESPONSIVE PARA QUE NO SE MONTE) --- */}
         <motion.h1 
           animate={{ scale: [1, 1.05, 1], textShadow: ["0 0 10px #66fcf1", "0 0 30px #66fcf1", "0 0 10px #66fcf1"] }}
           transition={{ duration: 3, repeat: Infinity }}
-          style={{ color: '#66fcf1', fontSize: '50px', margin: '0', fontWeight: '900', letterSpacing: '4px' }}
+          style={{ 
+            color: '#66fcf1', 
+            fontSize: 'clamp(28px, 8vw, 50px)', // Evita que sea gigante en celular
+            lineHeight: '1.2', // Evita que se aplasten las letras
+            margin: '0', 
+            fontWeight: '900', 
+            letterSpacing: '2px' 
+          }}
         >
           RUTA DE EXPLORACIÓN
         </motion.h1>
         
         {progreso && (
           <div style={{ marginTop: '20px' }}>
-            <h2 style={{ fontSize: '28px', color: '#fff', textTransform: 'uppercase' }}>COMANDANTE {progreso.kid_name || 'PILOTO'}</h2>
+            <h2 style={{ fontSize: 'clamp(20px, 5vw, 28px)', color: '#fff', textTransform: 'uppercase' }}>COMANDANTE {progreso.kid_name || 'PILOTO'}</h2>
             <div style={{ fontSize: '40px', color: '#0b0c10', fontWeight: '900', background: '#66fcf1', display: 'inline-block', padding: '10px 50px', borderRadius: '50px', boxShadow: '0 0 30px #66fcf1', border: '4px solid #fff', marginTop: '10px' }}>
               {total} / 48
             </div>
@@ -115,8 +123,6 @@ function VisorEspacial() {
             {fila.map((num) => {
               const esEstacion = [12, 24, 36, 48].includes(num);
               const yaPasó = num <= total;
-              
-              // Lógica de posición del astronauta: si es 0, se queda en el 1
               const esActual = (total === 0 && num === 1) || (num === total);
 
               return (
@@ -195,9 +201,9 @@ function VisorEspacial() {
         <motion.button 
           whileHover={{ scale: 1.1, boxShadow: '0 0 40px #4caf50' }} whileTap={{ scale: 0.9 }}
           onClick={() => setMostrarPremioFinal(true)}
-          style={{ padding: '20px 60px', background: 'linear-gradient(90deg, #4caf50, #2e7d32)', color: 'white', border: '3px solid #81c784', borderRadius: '60px', cursor: 'pointer', fontWeight: '900', fontSize: '22px', letterSpacing: '2px', boxShadow: '0 15px 35px rgba(0,0,0,0.6)' }}
+          style={{ padding: '15px 40px', background: 'linear-gradient(90deg, #4caf50, #2e7d32)', color: 'white', border: '3px solid #81c784', borderRadius: '60px', cursor: 'pointer', fontWeight: '900', fontSize: 'clamp(14px, 4vw, 20px)', letterSpacing: '1px', boxShadow: '0 15px 35px rgba(0,0,0,0.6)' }}
         >
-          🏁 REVELAR PREMIO SEMANAL
+          🏁 REVELAR PREMIO
         </motion.button>
       </div>
 
@@ -206,7 +212,7 @@ function VisorEspacial() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.96)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
             {premioFinal ? (
               <motion.div initial={{ scale: 0.6, y: 100 }} animate={{ scale: 1, y: 0 }} style={{ textAlign: 'center' }}>
-                <h1 style={{ color: '#66fcf1', fontSize: '55px', textShadow: '0 0 30px #66fcf1', margin: '0' }}>{premioFinal.titulo}</h1>
+                <h1 style={{ color: '#66fcf1', fontSize: 'clamp(30px, 8vw, 55px)', textShadow: '0 0 30px #66fcf1', margin: '0' }}>{premioFinal.titulo}</h1>
                 <p style={{ color: '#ffaa00', fontSize: '30px', fontWeight: '900', margin: '20px 0' }}>¡Misión Cumplida: {total} Puntos!</p>
                 <img src={premioFinal.img} alt="Premio" style={{ width: '100%', maxWidth: '480px', borderRadius: '40px', border: '10px solid #66fcf1', boxShadow: '0 0 60px rgba(102, 252, 241, 0.5)' }} />
                 <br />
@@ -226,7 +232,7 @@ function VisorEspacial() {
   );
 }
 
-// --- NAVEGACIÓN CORREGIDA: RESPONSIVE Y GALÁCTICA ---
+// --- NAVEGACIÓN GALÁCTICA Y RESPONSIVE ---
 function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -240,51 +246,72 @@ function Navigation() {
     navigate('/');
   };
 
+  // Función interna para crear estrellas en el Menú
+  const createNavStars = (num) => {
+    return [...Array(num)].map((_, i) => (
+      <motion.div
+        key={i}
+        style={{
+          position: 'absolute',
+          width: Math.random() * 2 + 'px',
+          height: Math.random() * 2 + 'px',
+          background: '#fff',
+          borderRadius: '50%',
+          top: Math.random() * 100 + '%',
+          left: Math.random() * 100 + '%',
+          boxShadow: '0 0 5px #fff, 0 0 10px #66fcf1',
+        }}
+        animate={{ opacity: [0, 1, 0], scale: [1, 1.2, 1] }}
+        transition={{ duration: Math.random() * 3 + 2, repeat: Infinity, ease: "easeInOut", delay: Math.random() * 5 }}
+      />
+    ));
+  };
+
   return (
     <nav style={{ 
-      padding: '15px 10px', 
-      background: 'radial-gradient(circle at top, #1b2735 0%, #090a0f 100%)', // Fondo Galáctico
-      borderBottom: '2px solid #66fcf1', // Borde neón
+      padding: '15px', 
+      background: 'linear-gradient(180deg, #1b2735 0%, #0b0c10 100%)', 
+      borderBottom: '2px solid #66fcf1', 
       display: 'flex', 
-      flexWrap: 'wrap', // <--- Clave: Permite que los elementos bajen si no caben
-      justifyContent: 'center', 
+      flexWrap: 'wrap', 
+      justifyContent: 'space-evenly', // Distribuye mejor los botones en celular
       alignItems: 'center',
-      gap: 'clamp(10px, 4vw, 30px)', // Espaciado dinámico según la pantalla
-      boxShadow: '0 4px 20px rgba(102, 252, 241, 0.2)', // Resplandor inferior
-      position: 'relative' 
+      gap: '10px', 
+      boxShadow: '0 4px 20px rgba(102, 252, 241, 0.2)', 
+      position: 'relative',
+      overflow: 'hidden', // Evita que las estrellas se salgan
+      zIndex: 1000
     }}>
+      
+      {/* Contenedor de estrellas del menú */}
+      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}>
+        {createNavStars(30)}
+      </div>
+
       <Link to="/explorar" style={{ 
-        color: '#66fcf1', 
-        textDecoration: 'none', 
-        fontSize: 'clamp(13px, 3.5vw, 18px)', // El texto se achica en celulares
-        fontWeight: '900',
-        textShadow: '0 0 10px rgba(102, 252, 241, 0.5)', // Brillo del texto
-        textAlign: 'center'
+        color: '#66fcf1', textDecoration: 'none', 
+        fontSize: 'clamp(12px, 3.5vw, 16px)', fontWeight: '900',
+        textShadow: '0 0 10px rgba(102, 252, 241, 0.5)', 
+        position: 'relative', zIndex: 1
       }}>
-        🛰️ RUTA DE EXPLORACIÓN
+        🛰️ EXPLORACIÓN
       </Link>
       
       <Link to="/papas" style={{ 
-        color: '#ffaa00', 
-        textDecoration: 'none', 
-        fontSize: 'clamp(13px, 3.5vw, 18px)', 
-        fontWeight: '900',
+        color: '#ffaa00', textDecoration: 'none', 
+        fontSize: 'clamp(12px, 3.5vw, 16px)', fontWeight: '900',
         textShadow: '0 0 10px rgba(255, 170, 0, 0.5)', 
-        textAlign: 'center'
+        position: 'relative', zIndex: 1
       }}>
-        🛠️ COMANDO CENTRAL
+        🛠️ COMANDO
       </Link>
       
       <button onClick={cerrarSesion} style={{ 
-        background: 'rgba(255, 76, 76, 0.1)', // Fondo semi-transparente rojo
-        border: '1px solid #ff4c4c', 
-        color: '#ff4c4c', 
-        cursor: 'pointer', 
-        borderRadius: '5px', 
-        padding: '6px 14px', 
-        fontSize: 'clamp(11px, 3vw, 13px)', 
-        fontWeight: 'bold',
-        boxShadow: '0 0 10px rgba(255, 76, 76, 0.3)' // Resplandor rojo
+        background: 'rgba(255, 76, 76, 0.1)', border: '1px solid #ff4c4c', 
+        color: '#ff4c4c', cursor: 'pointer', borderRadius: '5px', 
+        padding: '8px 15px', fontSize: 'clamp(11px, 3vw, 13px)', 
+        fontWeight: 'bold', boxShadow: '0 0 10px rgba(255, 76, 76, 0.3)',
+        position: 'relative', zIndex: 1
       }}>
         SALIR
       </button>
@@ -300,17 +327,13 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <BrowserRouter>
-      {/* 2. CAMBIO EN EL CONTENEDOR: Añadimos flexbox para empujar el footer hacia abajo */}
       <div style={{ 
-        backgroundColor: '#0b0c10', 
-        minHeight: '100vh', 
-        display: 'flex', 
-        flexDirection: 'column', 
+        backgroundColor: '#0b0c10', minHeight: '100vh', 
+        display: 'flex', flexDirection: 'column', 
         fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif' 
       }}>
         <Navigation />
         
-        {/* 3. CONTENEDOR DE RUTAS: con flex: 1 para ocupar todo el espacio disponible */}
         <div style={{ flex: 1 }}>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -324,7 +347,6 @@ function App() {
           </Routes>
         </div>
 
-       
         <Footer /> 
       </div>
     </BrowserRouter>
