@@ -13,8 +13,7 @@ import Login from './components/Login';
 import Registro from './components/Registro';
 import RecuperarPassword from './components/RecuperarPassword';
 import Footer from './components/Footer'; // <--- 1. IMPORTACIÓN AGREGADA
-import Metricas from './components/Metricas';
-
+import Metricas from './components/Metricas'; 
 // --- CONFIGURACIÓN GLOBAL DE AXIOS ---
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
