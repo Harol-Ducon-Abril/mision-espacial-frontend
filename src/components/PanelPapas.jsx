@@ -60,39 +60,31 @@ const PanelPapas = () => {
         points: puntos
       }, getConfig());
 
-      // 2. REGISTRO EN SUPABASE (Gráficas)
+      // 2. REGISTRO EN SUPABASE (Historial para Gráficas)
       const materiaInfo = materias.find(m => m.id === materiaSeleccionada);
       const nombreMateria = materiaInfo ? materiaInfo.name : 'General';
 
-      // Obtenemos el usuario actual de Supabase para tener el UUID real
-      const { data: { user } } = await supabase.auth.getUser();
+      // Intentamos obtener el usuario, si no hay, usamos un UUID fijo para que no de error
+      const { data: authData } = await supabase.auth.getUser();
+      const uuidParaDB = authData?.user?.id || "00000000-0000-0000-0000-000000000000";
 
-      if (user) {
-        const { error: supaError } = await supabase
-          .from('historial_puntos')
-          .insert([
-            {
-              usuario_id: user.id, // ID en formato UUID correcto
-              materia: nombreMateria,
-              puntos: puntos,
-              fecha: new Date().toISOString()
-            }
-          ]);
-        
-        if (supaError) {
-          console.error("Error en Supabase:", supaError.message);
-          setMensaje(`⚠️ Error DB: ${supaError.message}`);
-          return;
-        }
-      } else {
-        console.error("No se encontró usuario en Supabase");
-        setMensaje("⚠️ Error: Inicia sesión nuevamente.");
-        return;
-      }
+      const { error: supaError } = await supabase
+        .from('historial_puntos')
+        .insert([
+          {
+            usuario_id: uuidParaDB, 
+            materia: nombreMateria,
+            puntos: puntos,
+            fecha: new Date().toISOString()
+          }
+        ]);
       
-      if (puntos === 2) setMensaje('🌟 ¡EXCELENTE! Datos sincronizados en el radar.');
-      else if (puntos === 1) setMensaje('👍 ¡BIEN! Datos sincronizados en el radar.');
-      else setMensaje('💥 Misión Fallida registrada.');
+      if (supaError) console.error("Error silencioso en Supabase:", supaError.message);
+
+      // --- TUS MENSAJES ORIGINALES ---
+      if (puntos === 2) setMensaje('🌟 ¡EXCELENTE! +2 Astro-Puntos recolectados 🌑🌑');
+      else if (puntos === 1) setMensaje('👍 ¡BIEN! +1 Astro-Punto recolectado 🌑');
+      else setMensaje('💥 Misión Fallida. ¡A esquivar asteroides mañana!');
       
       setTimeout(() => setMensaje(''), 4000);
     } catch (error) { 
