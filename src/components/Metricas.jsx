@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import { supabase } from '../supabaseClient';
-import { Link } from 'react-router-dom';
 
 const Metricas = () => {
   const [datosSemana, setDatosSemana] = useState([]);
@@ -18,7 +17,6 @@ const Metricas = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Traemos solo lo de la semana actual (puedes filtrar por fecha en el query si prefieres)
       const { data, error } = await supabase
         .from('misiones_completadas')
         .select(`
@@ -30,7 +28,7 @@ const Metricas = () => {
 
       if (error) throw error;
 
-      // FILTRAR SOLO SEMANA ACTUAL (Lógica de JS)
+      // LÓGICA DE SEMANA ACTUAL
       const hoy = new Date();
       const inicioSemana = new Date(hoy.setDate(hoy.getDate() - hoy.getDay() + 1)); 
       inicioSemana.setHours(0,0,0,0);
@@ -45,7 +43,7 @@ const Metricas = () => {
       });
       setDatosMaterias(Object.keys(matMap).map(m => ({ materia: m, puntos: matMap[m] })));
 
-      // Procesar Días
+      // Procesar Días (Lunes a Domingo)
       const dias = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
       const diasData = dias.map(d => ({ name: d, puntos: 0 }));
       registrosSemana.forEach(reg => {
@@ -63,40 +61,51 @@ const Metricas = () => {
 
   return (
     <div style={styles.container}>
-      {/* FONDO ESPACIAL MEJORADO */}
+      {/* CAPAS DE FONDO ESPACIAL */}
       <div style={styles.stars}></div>
       <div style={styles.nebula}></div>
 
       <div style={styles.content}>
         <header style={styles.header}>
-          <Link to="/papas" style={styles.backBtn}>🚀 VOLVER</Link>
-          <h1 style={styles.mainTitle}>REPORTE DE MISIÓN: SEMANA ACTUAL</h1>
+          <h1 style={styles.mainTitle}>INFORME DE MISIÓN: SEMANA ACTUAL</h1>
         </header>
 
         {loading ? (
-          <p style={styles.loader}>Sincronizando con el satélite...</p>
+          <div style={styles.loaderContainer}>
+            <p style={styles.loader}>ESCANEANDO SECTOR ESTELAR...</p>
+          </div>
         ) : (
           <div style={styles.dashboard}>
-            {/* PANEL IZQUIERDO: LÍNEA DE TIEMPO */}
+            
+            {/* GRÁFICA DE LÍNEA: PROGRESIÓN DIARIA */}
             <div style={styles.glassCard}>
-              <h3 style={styles.cardTitle}>PROGRESIÓN DIARIA</h3>
-              <ResponsiveContainer width="100%" height={250}>
+              <h3 style={styles.cardTitle}>PROGRESIÓN DE LA SEMANA</h3>
+              <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={datosSemana}>
-                  <XAxis dataKey="name" stroke="#00f2ff" />
-                  <YAxis stroke="#00f2ff" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="name" stroke="#00f2ff" tick={{fontSize: 12}} />
+                  <YAxis stroke="#00f2ff" tick={{fontSize: 12}} />
                   <Tooltip contentStyle={styles.glassTooltip} />
-                  <Line type="monotone" dataKey="puntos" stroke="#00f2ff" strokeWidth={3} dot={{r: 5, fill: '#00f2ff'}} />
+                  <Line 
+                    type="monotone" 
+                    dataKey="puntos" 
+                    stroke="#00f2ff" 
+                    strokeWidth={4} 
+                    dot={{r: 6, fill: '#00f2ff', strokeWidth: 2, stroke: '#000'}} 
+                    activeDot={{r: 8}}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
 
-            {/* PANEL DERECHO: MATERIAS (PARA VER FALLOS) */}
+            {/* GRÁFICA DE BARRAS: FALLOS POR MATERIA */}
             <div style={styles.glassCard}>
               <h3 style={styles.cardTitle}>RENDIMIENTO POR MATERIA</h3>
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={datosMaterias}>
-                  <XAxis dataKey="materia" stroke="#ff00ea" />
-                  <YAxis stroke="#ff00ea" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="materia" stroke="#ff00ea" tick={{fontSize: 12}} />
+                  <YAxis stroke="#ff00ea" tick={{fontSize: 12}} />
                   <Tooltip contentStyle={styles.glassTooltip} />
                   <Bar dataKey="puntos">
                     {datosMaterias.map((entry, index) => (
@@ -105,7 +114,7 @@ const Metricas = () => {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-              <p style={styles.alertText}>Las barras rojas indican misiones fallidas o sin puntos.</p>
+              <p style={styles.alertText}>⚠️ Sectores en rojo requieren atención inmediata.</p>
             </div>
           </div>
         )}
@@ -117,37 +126,84 @@ const Metricas = () => {
 const styles = {
   container: {
     minHeight: '100vh',
-    backgroundColor: '#050505',
+    backgroundColor: '#020204',
     color: 'white',
-    fontFamily: "'Segoe UI', Roboto, sans-serif",
+    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
     position: 'relative',
     overflow: 'hidden'
   },
   stars: {
     position: 'absolute',
-    width: '200%',
-    height: '200%',
+    width: '100%',
+    height: '100%',
     background: `url('https://www.transparenttextures.com/patterns/stardust.png') repeat`,
-    animation: 'move-stars 100s linear infinite',
-    opacity: 0.5
+    opacity: 0.4,
+    zIndex: 1
   },
   nebula: {
     position: 'absolute',
     width: '100%',
     height: '100%',
-    background: 'radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.1), rgba(255, 0, 234, 0.05), transparent)',
-    filter: 'blur(80px)'
+    background: 'radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.08), rgba(255, 0, 234, 0.05), transparent)',
+    filter: 'blur(100px)',
+    zIndex: 2
   },
-  content: { position: 'relative', zIndex: 10, padding: '40px' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' },
-  mainTitle: { fontSize: '28px', fontWeight: '900', color: '#00f2ff', textShadow: '0 0 15px rgba(0,242,255,0.7)' },
-  backBtn: { color: '#fff', textDecoration: 'none', border: '1px solid #fff', padding: '5px 15px', borderRadius: '20px', fontSize: '12px' },
-  dashboard: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' },
-  glassCard: { background: 'rgba(255, 255, 255, 0.03)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '25px', borderRadius: '20px' },
-  cardTitle: { color: '#aaa', fontSize: '14px', letterSpacing: '2px', marginBottom: '20px' },
-  glassTooltip: { backgroundColor: '#000', border: '1px solid #00f2ff', color: '#fff' },
-  alertText: { fontSize: '11px', color: '#ff4b2b', marginTop: '10px', textAlign: 'center' },
-  loader: { textAlign: 'center', marginTop: '100px', fontSize: '18px', letterSpacing: '3px' }
+  content: { 
+    position: 'relative', 
+    zIndex: 10, 
+    padding: '40px 20px',
+    maxWidth: '1200px',
+    margin: '0 auto'
+  },
+  header: { 
+    textAlign: 'center', 
+    marginBottom: '50px' 
+  },
+  mainTitle: { 
+    fontSize: '32px', 
+    fontWeight: '900', 
+    color: '#00f2ff', 
+    textShadow: '0 0 20px rgba(0,242,255,0.6)',
+    letterSpacing: '3px',
+    margin: 0
+  },
+  dashboard: { 
+    display: 'grid', 
+    gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
+    gap: '30px' 
+  },
+  glassCard: { 
+    background: 'rgba(255, 255, 255, 0.02)', 
+    backdropFilter: 'blur(15px)', 
+    border: '1px solid rgba(0, 242, 255, 0.2)', 
+    padding: '30px', 
+    borderRadius: '25px',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+  },
+  cardTitle: { 
+    color: '#666', 
+    fontSize: '14px', 
+    letterSpacing: '4px', 
+    marginBottom: '25px', 
+    textAlign: 'center',
+    textTransform: 'uppercase'
+  },
+  glassTooltip: { 
+    backgroundColor: 'rgba(0,0,0,0.8)', 
+    border: '1px solid #00f2ff', 
+    color: '#fff',
+    borderRadius: '10px'
+  },
+  alertText: { 
+    fontSize: '12px', 
+    color: '#ff4b2b', 
+    marginTop: '20px', 
+    textAlign: 'center',
+    fontWeight: 'bold',
+    letterSpacing: '1px'
+  },
+  loaderContainer: { textAlign: 'center', marginTop: '150px' },
+  loader: { fontSize: '20px', letterSpacing: '8px', color: '#00f2ff', animation: 'pulse 2s infinite' }
 };
 
 export default Metricas;
