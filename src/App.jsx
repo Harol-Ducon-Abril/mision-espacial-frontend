@@ -14,6 +14,7 @@ import Registro from './components/Registro';
 import RecuperarPassword from './components/RecuperarPassword';
 import Footer from './components/Footer';
 import Metricas from './components/Metricas';
+import Diagnostico from './components/Diagnostico'
 
 // --- CONFIGURACIÓN GLOBAL DE AXIOS ---
 axios.interceptors.request.use((config) => {
@@ -360,6 +361,7 @@ function App() {
               <Route path="/premios" element={<ProtectedRoute><ConfigPremios /></ProtectedRoute>} /> 
               <Route path="/registro-piloto" element={<ProtectedRoute><RegistroPiloto /></ProtectedRoute>} />
               <Route path="/metricas" element={<Metricas />} />
+              <Route path="/diagnostico" element={<Diagnostico />} />
             </Routes>
           </div>
 
