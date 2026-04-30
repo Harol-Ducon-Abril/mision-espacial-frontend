@@ -7,21 +7,18 @@ const Metricas = () => {
   const [datosSemana, setDatosSemana] = useState([]);
   const [datosMaterias, setDatosMaterias] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [semanaOffset, setSemanaOffset] = useState(0); // 0 = actual, -1 = pasada, etc.
 
   useEffect(() => {
-    fetchData();
-  }, [semanaOffset]);
+    fetchDatosSemanaActual();
+  }, []);
 
-  const fetchData = async () => {
+  const fetchDatosSemanaActual = async () => {
     setLoading(true);
     try {
-      // 1. Obtener el usuario actual
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 2. Traer misiones completadas con el nombre de la materia (Relación de tablas)
-      // Ajusta los nombres de columnas si en tu DB son diferentes (ej: id_piloto, puntos)
+      // Traemos solo lo de la semana actual (puedes filtrar por fecha en el query si prefieres)
       const { data, error } = await supabase
         .from('misiones_completadas')
         .select(`
@@ -29,37 +26,36 @@ const Metricas = () => {
           puntos_ganados,
           misiones ( nombre_materia )
         `)
-        .eq('id_piloto', user.id); // Solo los puntos del piloto actual
+        .eq('id_piloto', user.id);
 
       if (error) throw error;
 
-      // --- Lógica de Procesamiento de Datos ---
-      
-      // Agrupar por Materia (Para detectar fallos)
-      const materiasMap = {};
-      data.forEach(reg => {
-        const nombre = reg.misiones?.nombre_materia || 'General';
-        materiasMap[nombre] = (materiasMap[nombre] || 0) + reg.puntos_ganados;
-      });
-      const rawMaterias = Object.keys(materiasMap).map(m => ({ materia: m, puntos: materiasMap[m] }));
-      setDatosMaterias(rawMaterias);
+      // FILTRAR SOLO SEMANA ACTUAL (Lógica de JS)
+      const hoy = new Date();
+      const inicioSemana = new Date(hoy.setDate(hoy.getDate() - hoy.getDay() + 1)); 
+      inicioSemana.setHours(0,0,0,0);
 
-      // Agrupar por Día (Línea de tiempo)
-      // Aquí simplificamos para mostrar la progresión
-      const diasMap = { Lun: 0, Mar: 0, Mie: 0, Jue: 0, Vie: 0, Sab: 0, Dom: 0 };
-      const nombresDias = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
-      
-      data.forEach(reg => {
-        const fecha = new Date(reg.created_at);
-        const diaNombre = nombresDias[fecha.getDay()];
-        diasMap[diaNombre] += reg.puntos_ganados;
-      });
+      const registrosSemana = data.filter(reg => new Date(reg.created_at) >= inicioSemana);
 
-      const rawDias = Object.keys(diasMap).map(d => ({ name: d, puntos: diasMap[d] }));
-      setDatosSemana(rawDias);
+      // Procesar Materias
+      const matMap = {};
+      registrosSemana.forEach(reg => {
+        const nom = reg.misiones?.nombre_materia || 'General';
+        matMap[nom] = (matMap[nom] || 0) + reg.puntos_ganados;
+      });
+      setDatosMaterias(Object.keys(matMap).map(m => ({ materia: m, puntos: matMap[m] })));
+
+      // Procesar Días
+      const dias = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
+      const diasData = dias.map(d => ({ name: d, puntos: 0 }));
+      registrosSemana.forEach(reg => {
+        const dIndex = (new Date(reg.created_at).getDay() + 6) % 7;
+        diasData[dIndex].puntos += reg.puntos_ganados;
+      });
+      setDatosSemana(diasData);
 
     } catch (err) {
-      console.error("Error cargando métricas:", err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -67,64 +63,53 @@ const Metricas = () => {
 
   return (
     <div style={styles.container}>
-      {/* FONDO DE ESTRELLAS CSS */}
+      {/* FONDO ESPACIAL MEJORADO */}
       <div style={styles.stars}></div>
+      <div style={styles.nebula}></div>
 
-      <nav style={styles.nav}>
-        <Link to="/papas" style={styles.link}>⬅️ VOLVER AL COMANDO</Link>
-        <h2 style={styles.title}>📊 INFORME DE RENDIMIENTO ACADÉMICO</h2>
-      </nav>
+      <div style={styles.content}>
+        <header style={styles.header}>
+          <Link to="/papas" style={styles.backBtn}>🚀 VOLVER</Link>
+          <h1 style={styles.mainTitle}>REPORTE DE MISIÓN: SEMANA ACTUAL</h1>
+        </header>
 
-      {loading ? (
-        <div style={styles.loader}>Cargando coordenadas de puntos...</div>
-      ) : (
-        <div style={styles.content}>
-          
-          {/* SECCIÓN DE FILTROS */}
-          <div style={styles.filterBar}>
-            <button onClick={() => setSemanaOffset(s => s - 1)} style={styles.btnFiltro}>◀ Semana Anterior</button>
-            <span style={styles.semanaText}>Mostrando Resumen General</span>
-            <button onClick={() => setSemanaOffset(s => s + 1)} style={styles.btnFiltro}>Siguiente Semana ▶</button>
-          </div>
-
-          <div style={styles.grid}>
-            {/* GRÁFICA DE LÍNEA: PROGRESIÓN */}
-            <div style={styles.card}>
-              <h3 style={styles.cardTitle}>📈 Evolución de Puntos</h3>
-              <ResponsiveContainer width="100%" height={300}>
+        {loading ? (
+          <p style={styles.loader}>Sincronizando con el satélite...</p>
+        ) : (
+          <div style={styles.dashboard}>
+            {/* PANEL IZQUIERDO: LÍNEA DE TIEMPO */}
+            <div style={styles.glassCard}>
+              <h3 style={styles.cardTitle}>PROGRESIÓN DIARIA</h3>
+              <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={datosSemana}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="name" stroke="#66fcf1" />
-                  <YAxis stroke="#66fcf1" />
-                  <Tooltip contentStyle={styles.tooltip} />
-                  <Line type="monotone" dataKey="puntos" stroke="#45a29e" strokeWidth={4} dot={{r: 6, fill: '#66fcf1'}} />
+                  <XAxis dataKey="name" stroke="#00f2ff" />
+                  <YAxis stroke="#00f2ff" />
+                  <Tooltip contentStyle={styles.glassTooltip} />
+                  <Line type="monotone" dataKey="puntos" stroke="#00f2ff" strokeWidth={3} dot={{r: 5, fill: '#00f2ff'}} />
                 </LineChart>
               </ResponsiveContainer>
-              <p style={styles.desc}>Visualiza tus picos de actividad diaria.</p>
             </div>
 
-            {/* GRÁFICA DE BARRAS: MATERIAS */}
-            <div style={styles.card}>
-              <h3 style={styles.cardTitle}>📚 Puntos por Materia</h3>
-              <ResponsiveContainer width="100%" height={300}>
+            {/* PANEL DERECHO: MATERIAS (PARA VER FALLOS) */}
+            <div style={styles.glassCard}>
+              <h3 style={styles.cardTitle}>RENDIMIENTO POR MATERIA</h3>
+              <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={datosMaterias}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="materia" stroke="#ffaa00" />
-                  <YAxis stroke="#ffaa00" />
-                  <Tooltip contentStyle={styles.tooltip} />
+                  <XAxis dataKey="materia" stroke="#ff00ea" />
+                  <YAxis stroke="#ff00ea" />
+                  <Tooltip contentStyle={styles.glassTooltip} />
                   <Bar dataKey="puntos">
                     {datosMaterias.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.puntos < 2 ? '#ff4c4c' : '#ffaa00'} />
+                      <Cell key={index} fill={entry.puntos < 1 ? '#ff4b2b' : '#ff00ea'} />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-              <p style={styles.desc}>Las barras <span style={{color: '#ff4c4c'}}>rojas</span> indican materias con bajo puntaje.</p>
+              <p style={styles.alertText}>Las barras rojas indican misiones fallidas o sin puntos.</p>
             </div>
           </div>
-
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
@@ -132,43 +117,37 @@ const Metricas = () => {
 const styles = {
   container: {
     minHeight: '100vh',
-    backgroundColor: '#0b0c10',
+    backgroundColor: '#050505',
     color: 'white',
-    fontFamily: "'Orbitron', sans-serif",
+    fontFamily: "'Segoe UI', Roboto, sans-serif",
     position: 'relative',
-    overflow: 'hidden',
-    padding: '20px'
+    overflow: 'hidden'
   },
   stars: {
     position: 'absolute',
-    top: 0,
-    left: 0,
+    width: '200%',
+    height: '200%',
+    background: `url('https://www.transparenttextures.com/patterns/stardust.png') repeat`,
+    animation: 'move-stars 100s linear infinite',
+    opacity: 0.5
+  },
+  nebula: {
+    position: 'absolute',
     width: '100%',
     height: '100%',
-    background: 'radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%)',
-    zIndex: 0
+    background: 'radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.1), rgba(255, 0, 234, 0.05), transparent)',
+    filter: 'blur(80px)'
   },
-  nav: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    position: 'relative',
-    zIndex: 1,
-    borderBottom: '1px solid #45a29e',
-    paddingBottom: '10px'
-  },
-  title: { color: '#66fcf1', fontSize: '22px', textShadow: '0 0 10px #66fcf1' },
-  link: { color: '#c5c6c7', textDecoration: 'none', fontSize: '14px' },
-  content: { position: 'relative', zIndex: 1, marginTop: '30px' },
-  filterBar: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginBottom: '30px' },
-  btnFiltro: { background: 'transparent', border: '1px solid #45a29e', color: '#66fcf1', padding: '5px 15px', borderRadius: '20px', cursor: 'pointer' },
-  semanaText: { fontSize: '18px', color: '#ffaa00' },
-  grid: { display: 'flex', flexWrap: 'wrap', gap: '25px', justifyContent: 'center' },
-  card: { background: 'rgba(31, 40, 51, 0.8)', padding: '25px', borderRadius: '15px', border: '1px solid #45a29e', width: '100%', maxWidth: '500px', backdropFilter: 'blur(5px)' },
-  cardTitle: { textAlign: 'center', marginBottom: '20px', fontSize: '18px' },
-  desc: { textAlign: 'center', fontSize: '12px', color: '#888', marginTop: '10px' },
-  tooltip: { backgroundColor: '#1f2833', border: '1px solid #66fcf1', color: '#fff' },
-  loader: { textAlign: 'center', marginTop: '100px', fontSize: '20px', color: '#66fcf1' }
+  content: { position: 'relative', zIndex: 10, padding: '40px' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' },
+  mainTitle: { fontSize: '28px', fontWeight: '900', color: '#00f2ff', textShadow: '0 0 15px rgba(0,242,255,0.7)' },
+  backBtn: { color: '#fff', textDecoration: 'none', border: '1px solid #fff', padding: '5px 15px', borderRadius: '20px', fontSize: '12px' },
+  dashboard: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' },
+  glassCard: { background: 'rgba(255, 255, 255, 0.03)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '25px', borderRadius: '20px' },
+  cardTitle: { color: '#aaa', fontSize: '14px', letterSpacing: '2px', marginBottom: '20px' },
+  glassTooltip: { backgroundColor: '#000', border: '1px solid #00f2ff', color: '#fff' },
+  alertText: { fontSize: '11px', color: '#ff4b2b', marginTop: '10px', textAlign: 'center' },
+  loader: { textAlign: 'center', marginTop: '100px', fontSize: '18px', letterSpacing: '3px' }
 };
 
 export default Metricas;
