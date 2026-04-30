@@ -1,22 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  Cell, PieChart, Pie, Label, LineChart, Line 
+  Cell, PieChart, Pie, Label 
 } from 'recharts';
 import { supabase } from '../supabaseClient';
 
 const Diagnostico = () => {
   const [data, setData] = useState([]);
-  const [datosSemana, setDatosSemana] = useState([]); // Para la gráfica de líneas
   const [semanal, setSemanal] = useState({ actual: 0, pasada: 0, crecimiento: 0 });
   const [analisis, setAnalisis] = useState({ fuerte: '---', debil: '---', totalPoints: 0 });
   const [loading, setLoading] = useState(true);
 
+  // --- CONFIGURACIÓN DE METAS (Basado en tu tabla de energía) ---
   const METAS = {
-    'INGLÉS': 8, 'MATEMÁTICAS': 6, 'C. NATURALES': 4, 'C. SOCIALES': 4,
-    'LENGUAJE': 4, 'TECNOLOGÍA': 2, 'PRO.TEXTUAL': 2, 'PLAN L': 2,
-    'SAB. MATE': 2, 'SAB. NATU': 2, 'SAB. LENG': 2, 'SAB. SOCI': 2, 'SAB. ING': 2,
-    'ETIC / RELI': 2, 'INT. EMO': 2
+    'INGLÉS': 8,
+    'MATEMÁTICAS': 6,
+    'C. NATURALES': 4,
+    'C. SOCIALES': 4,
+    'LENGUAJE': 4,
+    'TECNOLOGÍA': 2,
+    'PRO.TEXTUAL': 2,
+    'PLAN L': 2,
+    'SAB. MATE': 2,
+    'SAB. NATU': 2,
+    'SAB. LENG': 2,
+    'SAB. SOCI': 2,
+    'SAB. ING': 2,
+    'ETIC / RELI': 2,
+    'INT. EMO': 2
   };
 
   useEffect(() => {
@@ -26,17 +37,11 @@ const Diagnostico = () => {
   const fetchDiagnostico = async () => {
     setLoading(true);
     try {
-      // 1. Traer datos de la vista estratégica
       const { data: res, error } = await supabase.from('diagnostico_estratégico').select('*');
       if (error) throw error;
 
-      // 2. Traer datos crudos para la progresión diaria (Gráfica de líneas)
-      const { data: rawData } = await supabase
-        .from('daily_scores')
-        .select('points, created_at')
-        .gte('created_at', new Date(new Date().setDate(new Date().getDate() - 7)).toISOString());
-
       if (res && res.length > 0) {
+        // 1. Cálculos para la barra de Comparativa Superior
         const totalActual = res.reduce((acc, curr) => acc + (curr.puntos_actual || 0), 0);
         const totalPasada = res.reduce((acc, curr) => acc + (curr.puntos_pasada || 0), 0);
         const dif = totalActual - totalPasada;
@@ -44,27 +49,26 @@ const Diagnostico = () => {
 
         setSemanal({ actual: totalActual, pasada: totalPasada, crecimiento: porc });
 
+        // 2. PROCESO DE ENERGÍA: Validamos puntos actuales contra la tabla de METAS
         const procesados = res.map(m => {
-          const meta = METAS[m.materia.toUpperCase()] || 2;
-          const energia = Math.min(Math.round((m.puntos_actual / meta) * 100), 100);
-          return { ...m, meta, energia };
+          const nombreLimpio = m.materia.toUpperCase().trim();
+          const metaMateria = METAS[nombreLimpio] || 2; // Si no está en la tabla, se asume 2
+          const porcentajeEnergia = Math.min(Math.round((m.puntos_actual / metaMateria) * 100), 100);
+          
+          return { 
+            ...m, 
+            meta: metaMateria, 
+            energia: porcentajeEnergia 
+          };
         });
 
-        // Lógica para gráfica de líneas (Progresión Diaria)
-        const etiquetas = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
-        const estructuraLineas = etiquetas.map(d => ({ name: d, puntos: 0 }));
-        
-        rawData?.forEach(reg => {
-          const f = new Date(reg.created_at);
-          const index = (f.getDay() + 6) % 7; 
-          if (estructuraLineas[index]) estructuraLineas[index].puntos += reg.points;
-        });
-        setDatosSemana(estructuraLineas);
-
+        // 3. DETECCIÓN CRÍTICA REAL (Basada en Promedio Histórico)
         const criticaHistorica = [...res].sort((a, b) => a.promedio_historico - b.promedio_historico)[0];
         const fuerteHistorica = [...res].sort((a, b) => b.promedio_historico - a.promedio_historico)[0];
 
+        // Ordenamos las celdas por energía (las más bajas primero para diagnóstico rápido)
         setData(procesados.sort((a, b) => a.energia - b.energia));
+        
         setAnalisis({
           fuerte: fuerteHistorica?.materia || '---',
           debil: criticaHistorica?.materia || '---',
@@ -72,7 +76,7 @@ const Diagnostico = () => {
         });
       }
     } catch (err) {
-      console.error("Error:", err);
+      console.error("Error en diagnóstico estratégico:", err);
     } finally {
       setLoading(false);
     }
@@ -87,11 +91,11 @@ const Diagnostico = () => {
         <header style={styles.header}>
           <div style={styles.scanline}></div>
           <h1 style={styles.mainTitle}>GALAXY BRAIN: CENTRO DE MANDO</h1>
-          <p style={styles.subtitle}>DIAGNÓSTICO ESTRATÉGICO INTEGRAL</p>
+          <p style={styles.subtitle}>DIAGNÓSTICO ESTRATÉGICO BASADO EN PROMEDIO HISTÓRICO</p>
         </header>
 
         {loading ? (
-          <p style={styles.loader}>CARGANDO INTERFAZ TÁCTICA...</p>
+          <p style={styles.loader}>SINCRONIZANDO HISTORIAL ESTELAR...</p>
         ) : (
           <div style={styles.dashboard}>
             
@@ -113,38 +117,6 @@ const Diagnostico = () => {
               </p>
             </div>
 
-            {/* --- NUEVA SECCIÓN: PROGRESIÓN Y RENDIMIENTO (LAS IMÁGENES QUE PEDISTE) --- */}
-            <div style={styles.mainGrid}>
-              <div style={styles.glassCard}>
-                <h3 style={styles.cardHeader}>PROGRESIÓN DIARIA</h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={datosSemana}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="name" stroke="#00f2ff" />
-                    <YAxis stroke="#00f2ff" />
-                    <Tooltip contentStyle={styles.glassTooltip} />
-                    <Line type="monotone" dataKey="puntos" stroke="#00f2ff" strokeWidth={4} dot={{r: 6, fill: '#00f2ff'}} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-
-              <div style={styles.glassCard}>
-                <h3 style={styles.cardHeader}>RENDIMIENTO POR MATERIA</h3>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={data}>
-                    <XAxis dataKey="materia" stroke="#0e9efd" tick={{fontSize: 9}} />
-                    <YAxis stroke="#0e9efd" />
-                    <Tooltip contentStyle={styles.glassTooltip} />
-                    <Bar dataKey="puntos_actual">
-                      {data.map((entry, index) => (
-                        <Cell key={index} fill={entry.energia < 50 ? '#ff4b2b' : '#18e4a7fd'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
             <div style={styles.mainGrid}>
               {/* SECTORES CRÍTICOS */}
               <div style={styles.glassCard}>
@@ -152,7 +124,7 @@ const Diagnostico = () => {
                 <div style={styles.alertBox}>
                   <span style={styles.criticoLabel}>❌ FALLA CONSTANTE DETECTADA:</span>
                   <h2 style={styles.subjectText}>{analisis.debil.toUpperCase()}</h2>
-                  <p style={styles.adviceText}>Basado en el historial de todas las semanas.</p>
+                  <p style={styles.adviceText}>Basado en el historial de todas las semanas, esta materia es la que presenta menor puntuación promedio.</p>
                 </div>
                 <div style={styles.successBox}>
                   <span style={styles.fuerteLabel}>✅ MÁXIMO IMPULSO:</span>
@@ -174,8 +146,8 @@ const Diagnostico = () => {
               </div>
             </div>
 
-            {/* CELDAS DE ENERGÍA */}
-            <h3 style={styles.gridTitle}>ESTADO DE CELDAS ACADÉMICAS (SEMANA ACTUAL)</h3>
+            {/* CELDAS DE ENERGÍA CON LÓGICA DE TABLA */}
+            <h3 style={styles.gridTitle}>ESTADO DE CELDAS ACADÉMICAS (SISTEMA DE CARGA)</h3>
             <div style={styles.energyGrid}>
               {data.map((m, i) => (
                 <div key={i} style={styles.energyCell}>
@@ -185,6 +157,9 @@ const Diagnostico = () => {
                   </div>
                   <div style={styles.miniTrack}>
                     <div style={{...styles.miniFill, width:`${m.energia}%`, background: m.energia < 50 ? '#ff4b2b' : '#00f2ff'}} />
+                  </div>
+                  <div style={{fontSize: '9px', marginTop: '6px', color: '#666', textAlign: 'right'}}>
+                    META: {m.meta} PTS | ACTUAL: {m.puntos_actual}
                   </div>
                 </div>
               ))}
@@ -216,20 +191,19 @@ const styles = {
   valP: { width: '60px', color: '#666', fontSize: '12px' },
   valA: { width: '60px', color: '#00f2ff', fontSize: '12px', fontWeight: 'bold' },
   crecimientoMsg: { textAlign: 'center', fontSize: '12px', color: '#ccc', fontStyle: 'italic', marginTop: '15px' },
-  mainGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' },
+  mainGrid: { display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '20px', marginBottom: '30px' },
   alertBox: { padding: '20px', background: 'rgba(255, 75, 43, 0.05)', borderLeft: '5px solid #ff4b2b', borderRadius: '15px', marginBottom: '15px' },
   successBox: { padding: '20px', background: 'rgba(0, 242, 255, 0.05)', borderLeft: '5px solid #00f2ff', borderRadius: '15px' },
   criticoLabel: { color: '#ff4b2b', fontSize: '11px', fontWeight: 'bold' },
   fuerteLabel: { color: '#00f2ff', fontSize: '11px', fontWeight: 'bold' },
-  subjectText: { fontSize: '24px', color: 'white', fontWeight: 'bold', margin: '5px 0' },
-  adviceText: { fontSize: '11px', color: '#888', lineHeight: '1.4' },
+  subjectText: { fontSize: '28px', color: 'white', fontWeight: 'bold', margin: '5px 0' },
+  adviceText: { fontSize: '12px', color: '#888', lineHeight: '1.4' },
   gridTitle: { fontSize: '14px', letterSpacing: '3px', color: '#45a29e', marginBottom: '20px', textAlign: 'center' },
   energyGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px' },
   energyCell: { background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '12px', border: '1px solid #1f2833' },
   cellHeader: { display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '8px', fontWeight: 'bold' },
   miniTrack: { height: '6px', background: '#000', borderRadius: '10px', overflow: 'hidden' },
   miniFill: { height: '100%', transition: 'width 1.5s ease' },
-  glassTooltip: { backgroundColor: 'rgba(0,0,0,0.8)', border: '1px solid #00f2ff', color: '#fff', borderRadius: '10px' },
   loader: { textAlign: 'center', marginTop: '150px', fontSize: '20px', letterSpacing: '8px', color: '#00f2ff' }
 };
 
