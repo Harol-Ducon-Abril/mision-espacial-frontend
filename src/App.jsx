@@ -273,11 +273,15 @@ function Navigation() {
   };
 
   return (
-    <nav style={{ padding: '18px', backgroundColor: '#111', borderBottom: '2px solid #45a29e', display: 'flex', justifyContent: 'center', gap: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.6)', position: 'relative', zIndex: 1 }}>
-      <Link to="/explorar" style={{ color: '#66fcf1', textDecoration: 'none', fontSize: '18px', fontWeight: '900' }}>🛰️ RUTA DE EXPLORACION</Link>
-      <Link to="/papas" style={{ color: '#ffaa00', textDecoration: 'none', fontSize: '18px', fontWeight: '900' }}>🛠️ COMANDO CENTRAL</Link>
-      <button onClick={cerrarSesion} style={{ background: 'transparent', border: '1px solid #ff4c4c', color: '#ff4c4c', cursor: 'pointer', borderRadius: '5px', padding: '5px 10px', fontSize: '12px', fontWeight: 'bold' }}>SALIR</button>
-    </nav>
+    <nav style={{ padding: '18px', backgroundColor: '#111', borderBottom: '2px solid #45a29e', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.6)', position: 'relative', zIndex: 1 }}>
+  <Link to="/explorar" style={{ color: '#66fcf1', textDecoration: 'none', fontSize: '18px', fontWeight: '900' }}>🛰️ RUTA DE EXPLORACION</Link>
+  <Link to="/papas" style={{ color: '#ffaa00', textDecoration: 'none', fontSize: '18px', fontWeight: '900' }}>🛠️ COMANDO CENTRAL</Link>
+  
+  {/* 👇 AQUÍ AGREGAMOS EL BOTÓN DE MÉTRICAS */}
+  <Link to="/metricas" style={{ color: '#82ca9d', textDecoration: 'none', fontSize: '18px', fontWeight: '900' }}>📊 MÉTRICAS</Link>
+  
+  <button onClick={cerrarSesion} style={{ background: 'transparent', border: '1px solid #ff4c4c', color: '#ff4c4c', cursor: 'pointer', borderRadius: '5px', padding: '5px 10px', fontSize: '12px', fontWeight: 'bold' }}>SALIR</button>
+</nav>
   );
 }
 
