@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { supabase } from '../supabaseClient'; // Importamos supabase para el historial
 
 const PanelPapas = () => {
   const [materias, setMaterias] = useState([]);
@@ -12,7 +13,6 @@ const PanelPapas = () => {
   const navigate = useNavigate();
   const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
 
-  // Función interna para obtener la autorización
   const getConfig = () => {
     const token = localStorage.getItem('token');
     return { headers: { Authorization: `Bearer ${token}` } };
@@ -50,20 +50,40 @@ const PanelPapas = () => {
 
   const enviar = async (puntos) => {
     if (!missionId) return setMensaje("❌ Error: Debes activar un piloto en la Academia primero.");
+    
     try {
+      // 1. TRANSMISIÓN AL BACKEND (Para el movimiento del astronauta - daily_scores)
       await axios.put('https://mision-espacial-backend.onrender.com/api/puntaje', {
         mission_id: missionId,
         subject_id: materiaSeleccionada, 
         day_of_week: diaSeleccionado, 
         points: puntos
       }, getConfig());
+
+      // 2. TRANSMISIÓN AL HISTORIAL (Para las gráficas de estrellas - historial_puntos)
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        await supabase.from('historial_puntos').insert([
+          {
+            user_id: user.id,
+            subject_id: materiaSeleccionada,
+            mission_id: missionId,
+            points: puntos,
+            created_at: new Date() // Sella la fecha exacta de la misión
+          }
+        ]);
+      }
       
       if (puntos === 2) setMensaje('🌟 ¡EXCELENTE! +2 Astro-Puntos recolectados 🌑🌑');
       else if (puntos === 1) setMensaje('👍 ¡BIEN! +1 Astro-Punto recolectado 🌑');
       else setMensaje('💥 Misión Fallida. ¡A esquivar asteroides mañana!');
       
       setTimeout(() => setMensaje(''), 4000);
-    } catch (error) { setMensaje('📡 Error en la transmisión.'); }
+    } catch (error) { 
+      console.error("Error en la doble transmisión:", error);
+      setMensaje('📡 Error en la transmisión.'); 
+    }
   };
 
   return (

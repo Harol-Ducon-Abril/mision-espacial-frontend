@@ -8,28 +8,24 @@ const Metricas = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDatosSemanaActual();
+    fetchDatosReales();
   }, []);
 
-  const fetchDatosSemanaActual = async () => {
+  const fetchDatosReales = async () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.error("No hay usuario autenticado");
-        setLoading(false);
-        return;
-      }
+      if (!user) return;
 
+      // Consultamos la tabla historial_puntos y traemos el nombre desde subjects
       const { data, error } = await supabase
-        .from('misiones_completadas')
+        .from('historial_puntos')
         .select(`
           created_at,
-          puntos_ganados,
-          misiones ( nombre_materia )
+          points,
+          subjects ( name )
         `)
-        .eq('id_piloto', user.id); 
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
@@ -39,35 +35,34 @@ const Metricas = () => {
         return;
       }
 
-      // --- PROCESAMIENTO DE MATERIAS ---
+      // --- FILTRO SEMANA ACTUAL ---
+      const hoy = new Date();
+      const inicioSemana = new Date(hoy.setDate(hoy.getDate() - hoy.getDay() + 1));
+      inicioSemana.setHours(0,0,0,0);
+
+      const registrosSemana = data.filter(reg => new Date(reg.created_at) >= inicioSemana);
+
+      // --- PROCESAR MATERIAS ---
       const matMap = {};
-      data.forEach(reg => {
-        const nombreMat = reg.misiones?.nombre_materia || 'General';
-        matMap[nombreMat] = (matMap[nombreMat] || 0) + (reg.puntos_ganados || 0);
+      registrosSemana.forEach(reg => {
+        const nom = reg.subjects?.name || 'General';
+        matMap[nom] = (matMap[nom] || 0) + (reg.points || 0);
       });
       setDatosMaterias(Object.keys(matMap).map(m => ({ materia: m, puntos: matMap[m] })));
 
-      // --- PROCESAMIENTO DE DÍAS ---
-      const diasNombres = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
-      const diasData = { 'Lun': 0, 'Mar': 0, 'Mie': 0, 'Jue': 0, 'Vie': 0, 'Sab': 0, 'Dom': 0 };
+      // --- PROCESAR DÍAS ---
+      const diasLab = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
+      const diasData = diasLab.map(d => ({ name: d, puntos: 0 }));
       
-      data.forEach(reg => {
-        const fecha = new Date(reg.created_at);
-        const nombreDia = diasNombres[fecha.getDay()];
-        if (diasData[nombreDia] !== undefined) {
-          diasData[nombreDia] += (reg.puntos_ganados || 0);
-        }
+      registrosSemana.forEach(reg => {
+        const fechaObj = new Date(reg.created_at);
+        const dIndex = (fechaObj.getDay() + 6) % 7; 
+        if(diasData[dIndex]) diasData[dIndex].puntos += reg.points;
       });
-
-      const finalDias = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'].map(d => ({
-        name: d,
-        puntos: diasData[d]
-      }));
-
-      setDatosSemana(finalDias);
+      setDatosSemana(diasData);
 
     } catch (err) {
-      console.error("Error:", err);
+      console.error("Error cargando historial:", err);
     } finally {
       setLoading(false);
     }
@@ -77,7 +72,7 @@ const Metricas = () => {
     <div style={styles.container}>
       <div style={styles.stars}></div>
       <div style={styles.nebula}></div>
-
+      
       <div style={styles.content}>
         <header style={styles.header}>
           <h1 style={styles.mainTitle}>INFORME DE MISIÓN: SEMANA ACTUAL</h1>
@@ -85,32 +80,25 @@ const Metricas = () => {
 
         {loading ? (
           <div style={styles.loaderContainer}>
-            <p style={styles.loader}>ESTABLECIENDO CONEXIÓN...</p>
+            <p style={styles.loader}>SINCRONIZANDO CON LA BASE ESTELAR...</p>
           </div>
         ) : (
           <div style={styles.dashboard}>
-            
             <div style={styles.glassCard}>
-              <h3 style={styles.cardTitle}>PUNTOS POR DÍA</h3>
+              <h3 style={styles.cardTitle}>PROGRESIÓN DIARIA (Puntos)</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={datosSemana}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
                   <XAxis dataKey="name" stroke="#00f2ff" />
                   <YAxis stroke="#00f2ff" />
                   <Tooltip contentStyle={styles.glassTooltip} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="puntos" 
-                    stroke="#00f2ff" 
-                    strokeWidth={4} 
-                    dot={{r: 6, fill: '#00f2ff'}} 
-                  />
+                  <Line type="monotone" dataKey="puntos" stroke="#00f2ff" strokeWidth={4} dot={{r: 6, fill: '#00f2ff'}} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
 
             <div style={styles.glassCard}>
-              <h3 style={styles.cardTitle}>PUNTOS POR MATERIA</h3>
+              <h3 style={styles.cardTitle}>RENDIMIENTO POR MATERIA</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={datosMaterias}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
