@@ -61,26 +61,33 @@ const PanelPapas = () => {
       }, getConfig());
 
       // 2. REGISTRO EN SUPABASE (Gráficas)
-      // Buscamos el nombre de la materia para guardarlo como texto según tu tabla
       const materiaInfo = materias.find(m => m.id === materiaSeleccionada);
       const nombreMateria = materiaInfo ? materiaInfo.name : 'General';
 
-      // IMPORTANTE: Como el getSession falla, usamos un truco para insertar 
-      // Si tu tabla tiene RLS, asegúrate de que esté "Disabled" o tenga política "Public" para pruebas
-      const { error: supaError } = await supabase
-        .from('historial_puntos')
-        .insert([
-          {
-            usuario_id: missionId, // Usamos el missionId como referencia si el auth falla
-            materia: nombreMateria,
-            puntos: puntos,
-            fecha: new Date().toISOString()
-          }
-        ]);
-      
-      if (supaError) {
-        console.error("Error en Supabase:", supaError.message);
-        // Si sale error aquí, ve a Supabase -> Table Editor -> historial_puntos -> RLS debe estar en 'Disabled'
+      // Obtenemos el usuario actual de Supabase para tener el UUID real
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { error: supaError } = await supabase
+          .from('historial_puntos')
+          .insert([
+            {
+              usuario_id: user.id, // ID en formato UUID correcto
+              materia: nombreMateria,
+              puntos: puntos,
+              fecha: new Date().toISOString()
+            }
+          ]);
+        
+        if (supaError) {
+          console.error("Error en Supabase:", supaError.message);
+          setMensaje(`⚠️ Error DB: ${supaError.message}`);
+          return;
+        }
+      } else {
+        console.error("No se encontró usuario en Supabase");
+        setMensaje("⚠️ Error: Inicia sesión nuevamente.");
+        return;
       }
       
       if (puntos === 2) setMensaje('🌟 ¡EXCELENTE! Datos sincronizados en el radar.');
