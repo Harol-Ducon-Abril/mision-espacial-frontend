@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { supabase } from '../supabaseClient'; // Importamos supabase para el historial
+import { supabase } from '../supabaseClient'; 
 
 const PanelPapas = () => {
   const [materias, setMaterias] = useState([]);
@@ -13,6 +13,7 @@ const PanelPapas = () => {
   const navigate = useNavigate();
   const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
 
+  // Función interna para obtener la autorización
   const getConfig = () => {
     const token = localStorage.getItem('token');
     return { headers: { Authorization: `Bearer ${token}` } };
@@ -52,7 +53,7 @@ const PanelPapas = () => {
     if (!missionId) return setMensaje("❌ Error: Debes activar un piloto en la Academia primero.");
     
     try {
-      // 1. TRANSMISIÓN AL BACKEND (Para el movimiento del astronauta - daily_scores)
+      // 1. REGISTRO EN BACKEND (Para daily_scores / Astronauta)
       await axios.put('https://mision-espacial-backend.onrender.com/api/puntaje', {
         mission_id: missionId,
         subject_id: materiaSeleccionada, 
@@ -60,28 +61,35 @@ const PanelPapas = () => {
         points: puntos
       }, getConfig());
 
-      // 2. TRANSMISIÓN AL HISTORIAL (Para las gráficas de estrellas - historial_puntos)
-      const { data: { user } } = await supabase.auth.getUser();
+      // 2. REGISTRO EN SUPABASE (Para historial_puntos / Gráficas)
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (user) {
-        await supabase.from('historial_puntos').insert([
-          {
-            user_id: user.id,
-            subject_id: materiaSeleccionada,
-            mission_id: missionId,
-            points: puntos,
-            created_at: new Date() // Sella la fecha exacta de la misión
-          }
-        ]);
+      if (session) {
+        const { error: supaError } = await supabase
+          .from('historial_puntos')
+          .insert([
+            {
+              user_id: session.user.id,
+              subject_id: materiaSeleccionada,
+              mission_id: missionId,
+              points: puntos
+              // created_at se genera automáticamente en la DB
+            }
+          ]);
+        
+        if (supaError) console.error("Error guardando historial:", supaError.message);
+      } else {
+        console.warn("No se detectó sesión activa en Supabase");
       }
       
+      // Lógica de mensajes según puntaje
       if (puntos === 2) setMensaje('🌟 ¡EXCELENTE! +2 Astro-Puntos recolectados 🌑🌑');
       else if (puntos === 1) setMensaje('👍 ¡BIEN! +1 Astro-Punto recolectado 🌑');
       else setMensaje('💥 Misión Fallida. ¡A esquivar asteroides mañana!');
       
       setTimeout(() => setMensaje(''), 4000);
     } catch (error) { 
-      console.error("Error en la doble transmisión:", error);
+      console.error("Error en envío dual:", error);
       setMensaje('📡 Error en la transmisión.'); 
     }
   };
