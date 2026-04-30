@@ -273,14 +273,55 @@ function Navigation() {
   };
 
   return (
-    <nav style={{ padding: '18px', backgroundColor: '#111', borderBottom: '2px solid #45a29e', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.6)', position: 'relative', zIndex: 1 }}>
+   <nav style={{ 
+  padding: '18px', 
+  backgroundColor: '#111', 
+  borderBottom: '2px solid #45a29e', 
+  display: 'flex', 
+  justifyContent: 'center', 
+  alignItems: 'center', 
+  gap: '30px', // Aumentamos un poco el espacio
+  boxShadow: '0 4px 15px rgba(0,0,0,0.6)', 
+  position: 'relative', 
+  zIndex: 1 
+}}>
   <Link to="/explorar" style={{ color: '#66fcf1', textDecoration: 'none', fontSize: '18px', fontWeight: '900' }}>🛰️ RUTA DE EXPLORACION</Link>
+  
   <Link to="/papas" style={{ color: '#ffaa00', textDecoration: 'none', fontSize: '18px', fontWeight: '900' }}>🛠️ COMANDO CENTRAL</Link>
   
-  {/* 👇 AQUÍ AGREGAMOS EL BOTÓN DE MÉTRICAS */}
   <Link to="/metricas" style={{ color: '#82ca9d', textDecoration: 'none', fontSize: '18px', fontWeight: '900' }}>📊 MÉTRICAS</Link>
+
+  {/* 👇 NUEVO BOTÓN DE DIAGNÓSTICO ESTILO GALAXY BRAIN */}
+  <Link 
+    to="/diagnostico" 
+    style={{ 
+      background: 'linear-gradient(90deg, #00f2ff, #ff00ea)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      textDecoration: 'none', 
+      fontSize: '18px', 
+      fontWeight: '900',
+      border: '1px solid #ff00ea',
+      padding: '8px 15px',
+      borderRadius: '15px',
+      boxShadow: '0 0 10px rgba(255, 0, 234, 0.3)',
+      transition: '0.3s'
+    }}
+    onMouseOver={(e) => {
+      e.currentTarget.style.boxShadow = '0 0 20px rgba(0, 242, 255, 0.6)';
+      e.currentTarget.style.transform = 'scale(1.05)';
+    }}
+    onMouseOut={(e) => {
+      e.currentTarget.style.boxShadow = '0 0 10px rgba(255, 0, 234, 0.3)';
+      e.currentTarget.style.transform = 'scale(1)';
+    }}
+  >
+    🧠 DIAGNÓSTICO
+  </Link>
   
-  <button onClick={cerrarSesion} style={{ background: 'transparent', border: '1px solid #ff4c4c', color: '#ff4c4c', cursor: 'pointer', borderRadius: '5px', padding: '5px 10px', fontSize: '12px', fontWeight: 'bold' }}>SALIR</button>
+  <button onClick={cerrarSesion} style={{ background: 'transparent', border: '1px solid #ff4c4c', color: '#ff4c4c', cursor: 'pointer', borderRadius: '5px', padding: '5px 10px', fontSize: '12px', fontWeight: 'bold', marginLeft: '10px' }}>
+    SALIR
+  </button>
 </nav>
   );
 }

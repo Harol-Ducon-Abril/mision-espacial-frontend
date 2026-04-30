@@ -161,26 +161,7 @@ const PanelPapas = () => {
           <button onClick={() => navigate('/registro-piloto')} style={{ flex: '1', maxWidth: '350px', padding: '20px 30px', background: 'linear-gradient(90deg, #66fcf1, #45a29e)', color: '#0b0c10', border: 'none', borderRadius: '50px', fontSize: '18px', fontWeight: '900', cursor: 'pointer' }}>
             Academia Pilotos ➔
           </button>
-          // En PanelPapas.jsx, dentro de la sección de botones de abajo:
-
-<button 
-  onClick={() => navigate('/diagnostico')} 
-  style={{ 
-    flex: '1', 
-    maxWidth: '350px', 
-    padding: '20px 30px', 
-    background: 'linear-gradient(90deg, #00f2ff, #ff00ea)', // Degradado de los dos colores
-    color: '#0b0c10', 
-    border: 'none', 
-    borderRadius: '50px', 
-    fontSize: '18px', 
-    fontWeight: '900', 
-    cursor: 'pointer',
-    boxShadow: '0 0 20px rgba(0, 242, 255, 0.4)'
-  }}
->
-  CENTRO DIAGNÓSTICO ➔
-</button>
+          
         </div>
       </div>
     </div>
