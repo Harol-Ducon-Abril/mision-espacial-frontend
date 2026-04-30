@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, 
-  ResponsiveContainer, BarChart, Bar, Cell 
+  ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Label 
 } from 'recharts';
 import { supabase } from '../supabaseClient';
 
 const Metricas = () => {
   const [datosSemana, setDatosSemana] = useState([]);
   const [datosMaterias, setDatosMaterias] = useState([]);
+  const [energiaGlobal, setEnergiaGlobal] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Definimos la meta total de puntos para la semana (Suma de todas las metas)
+  const META_TOTAL_SEMANAL = 48; 
 
   useEffect(() => {
     fetchMetricas();
@@ -17,10 +21,6 @@ const Metricas = () => {
   const fetchMetricas = async () => {
     setLoading(true);
     try {
-      // 1. Obtener usuario de la sesión de Supabase
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // 2. Consultar la VISTA (Camino A)
       const { data, error } = await supabase
         .from('metricas_estelares')
         .select('*')
@@ -28,7 +28,6 @@ const Metricas = () => {
 
       if (error) throw error;
 
-      // 3. Lógica para filtrar solo la semana actual (Lunes a Domingo)
       const ahora = new Date();
       const diaActual = ahora.getDay(); 
       const diffLunes = diaActual === 0 ? -6 : 1 - diaActual;
@@ -38,31 +37,28 @@ const Metricas = () => {
 
       const registrosSemana = data.filter(reg => new Date(reg.fecha) >= lunesActual);
 
-      // --- FUNCIONALIDAD: PROCESAR GRÁFICA DE LÍNEAS ---
+      // --- 1. CÁLCULO DE ENERGÍA GLOBAL ---
+      const puntosTotales = registrosSemana.reduce((acc, reg) => acc + reg.puntos, 0);
+      const porcentajeEnergia = Math.min(Math.round((puntosTotales / META_TOTAL_SEMANAL) * 100), 100);
+      setEnergiaGlobal(porcentajeEnergia);
+
+      // --- 2. GRÁFICA DE LÍNEAS ---
       const etiquetas = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
       const estructuraLineas = etiquetas.map(d => ({ name: d, puntos: 0 }));
-
       registrosSemana.forEach(reg => {
         const f = new Date(reg.fecha);
         const index = (f.getDay() + 6) % 7; 
-        if (estructuraLineas[index]) {
-          estructuraLineas[index].puntos += reg.puntos;
-        }
+        if (estructuraLineas[index]) estructuraLineas[index].puntos += reg.puntos;
       });
       setDatosSemana(estructuraLineas);
 
-      // --- FUNCIONALIDAD: PROCESAR GRÁFICA DE BARRAS ---
+      // --- 3. GRÁFICA DE BARRAS ---
       const materiasMap = {};
       registrosSemana.forEach(reg => {
         const nombreMat = reg.materia || 'Otras';
         materiasMap[nombreMat] = (materiasMap[nombreMat] || 0) + reg.puntos;
       });
-
-      const estructuraBarras = Object.keys(materiasMap).map(m => ({
-        materia: m,
-        puntos: materiasMap[m]
-      }));
-      setDatosMaterias(estructuraBarras);
+      setDatosMaterias(Object.keys(materiasMap).map(m => ({ materia: m, puntos: materiasMap[m] })));
 
     } catch (err) {
       console.error("Falla en radar:", err.message);
@@ -70,6 +66,11 @@ const Metricas = () => {
       setLoading(false);
     }
   };
+
+  const pieData = [
+    { name: 'Energía', value: energiaGlobal },
+    { name: 'Restante', value: 100 - energiaGlobal }
+  ];
 
   return (
     <div style={styles.container}>
@@ -84,6 +85,36 @@ const Metricas = () => {
           <p style={styles.loader}>SINCRONIZANDO HISTORIAL...</p>
         ) : (
           <div style={styles.dashboard}>
+            
+            {/* NÚCLEO DE ENERGÍA GLOBAL (AQUÍ LO AGREGAMOS) */}
+            <div style={{...styles.glassCard, gridColumn: '1 / -1', textAlign: 'center'}}>
+              <h3 style={styles.cardTitle}>NÚCLEO DE ENERGÍA GLOBAL</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    innerRadius={60}
+                    outerRadius={80}
+                    startAngle={90}
+                    endAngle={-270}
+                    paddingAngle={0}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    <Cell fill="#ff00ea" />
+                    <Cell fill="rgba(255, 255, 255, 0.05)" />
+                    <Label 
+                      value={`${energiaGlobal}%`} 
+                      position="center" 
+                      fill="#ff00ea" 
+                      style={{ fontSize: '28px', fontWeight: 'bold', fontFamily: 'Orbitron' }} 
+                    />
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <p style={{color: '#ff00ea', fontSize: '12px', marginTop: '10px', letterSpacing: '2px'}}>CAPACIDAD DE LA MISIÓN ACTUAL</p>
+            </div>
+
             {/* PROGRESIÓN DIARIA */}
             <div style={styles.glassCard}>
               <h3 style={styles.cardTitle}>PROGRESIÓN DIARIA</h3>
@@ -93,13 +124,7 @@ const Metricas = () => {
                   <XAxis dataKey="name" stroke="#00f2ff" />
                   <YAxis stroke="#00f2ff" />
                   <Tooltip contentStyle={styles.glassTooltip} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="puntos" 
-                    stroke="#00f2ff" 
-                    strokeWidth={4} 
-                    dot={{r: 6, fill: '#00f2ff'}} 
-                  />
+                  <Line type="monotone" dataKey="puntos" stroke="#00f2ff" strokeWidth={4} dot={{r: 6, fill: '#00f2ff'}} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
