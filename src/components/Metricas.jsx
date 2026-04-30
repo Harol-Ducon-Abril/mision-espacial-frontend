@@ -109,8 +109,8 @@ const Metricas = () => {
               <h3 style={styles.cardTitle}>RENDIMIENTO POR MATERIA</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={datosMaterias}>
-                  <XAxis dataKey="materia" stroke="#0011ff" />
-                  <YAxis stroke="#0011ff" />
+                  <XAxis dataKey="materia" stroke="#0e9efd" />
+                  <YAxis stroke="#0e9efd" />
                   <Tooltip contentStyle={styles.glassTooltip} />
                   <Bar dataKey="puntos">
                     {datosMaterias.map((entry, index) => (
