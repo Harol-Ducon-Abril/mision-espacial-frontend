@@ -114,7 +114,7 @@ const Metricas = () => {
                   <Tooltip contentStyle={styles.glassTooltip} />
                   <Bar dataKey="puntos">
                     {datosMaterias.map((entry, index) => (
-                      <Cell key={index} fill={entry.puntos < 1 ? '#ff4b2b' : '#0011ff'} />
+                      <Cell key={index} fill={entry.puntos < 1 ? '#ff4b2b' : '#18e4a7fd'} />
                     ))}
                   </Bar>
                 </BarChart>
