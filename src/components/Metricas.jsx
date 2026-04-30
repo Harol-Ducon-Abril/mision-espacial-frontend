@@ -15,7 +15,12 @@ const Metricas = () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      
+      if (!user) {
+        console.error("No hay usuario autenticado");
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('misiones_completadas')
@@ -24,36 +29,45 @@ const Metricas = () => {
           puntos_ganados,
           misiones ( nombre_materia )
         `)
-        .eq('id_piloto', user.id);
+        .eq('id_piloto', user.id); 
 
       if (error) throw error;
 
-      // LÓGICA DE SEMANA ACTUAL
-      const hoy = new Date();
-      const inicioSemana = new Date(hoy.setDate(hoy.getDate() - hoy.getDay() + 1)); 
-      inicioSemana.setHours(0,0,0,0);
+      if (!data || data.length === 0) {
+        setDatosSemana([]);
+        setDatosMaterias([]);
+        return;
+      }
 
-      const registrosSemana = data.filter(reg => new Date(reg.created_at) >= inicioSemana);
-
-      // Procesar Materias
+      // --- PROCESAMIENTO DE MATERIAS ---
       const matMap = {};
-      registrosSemana.forEach(reg => {
-        const nom = reg.misiones?.nombre_materia || 'General';
-        matMap[nom] = (matMap[nom] || 0) + reg.puntos_ganados;
+      data.forEach(reg => {
+        const nombreMat = reg.misiones?.nombre_materia || 'General';
+        matMap[nombreMat] = (matMap[nombreMat] || 0) + (reg.puntos_ganados || 0);
       });
       setDatosMaterias(Object.keys(matMap).map(m => ({ materia: m, puntos: matMap[m] })));
 
-      // Procesar Días (Lunes a Domingo)
-      const dias = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
-      const diasData = dias.map(d => ({ name: d, puntos: 0 }));
-      registrosSemana.forEach(reg => {
-        const dIndex = (new Date(reg.created_at).getDay() + 6) % 7;
-        diasData[dIndex].puntos += reg.puntos_ganados;
+      // --- PROCESAMIENTO DE DÍAS ---
+      const diasNombres = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+      const diasData = { 'Lun': 0, 'Mar': 0, 'Mie': 0, 'Jue': 0, 'Vie': 0, 'Sab': 0, 'Dom': 0 };
+      
+      data.forEach(reg => {
+        const fecha = new Date(reg.created_at);
+        const nombreDia = diasNombres[fecha.getDay()];
+        if (diasData[nombreDia] !== undefined) {
+          diasData[nombreDia] += (reg.puntos_ganados || 0);
+        }
       });
-      setDatosSemana(diasData);
+
+      const finalDias = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'].map(d => ({
+        name: d,
+        puntos: diasData[d]
+      }));
+
+      setDatosSemana(finalDias);
 
     } catch (err) {
-      console.error(err);
+      console.error("Error:", err);
     } finally {
       setLoading(false);
     }
@@ -61,7 +75,6 @@ const Metricas = () => {
 
   return (
     <div style={styles.container}>
-      {/* CAPAS DE FONDO ESPACIAL */}
       <div style={styles.stars}></div>
       <div style={styles.nebula}></div>
 
@@ -72,40 +85,37 @@ const Metricas = () => {
 
         {loading ? (
           <div style={styles.loaderContainer}>
-            <p style={styles.loader}>ESCANEANDO SECTOR ESTELAR...</p>
+            <p style={styles.loader}>ESTABLECIENDO CONEXIÓN...</p>
           </div>
         ) : (
           <div style={styles.dashboard}>
             
-            {/* GRÁFICA DE LÍNEA: PROGRESIÓN DIARIA */}
             <div style={styles.glassCard}>
-              <h3 style={styles.cardTitle}>PROGRESIÓN DE LA SEMANA</h3>
+              <h3 style={styles.cardTitle}>PUNTOS POR DÍA</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={datosSemana}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="name" stroke="#00f2ff" tick={{fontSize: 12}} />
-                  <YAxis stroke="#00f2ff" tick={{fontSize: 12}} />
+                  <XAxis dataKey="name" stroke="#00f2ff" />
+                  <YAxis stroke="#00f2ff" />
                   <Tooltip contentStyle={styles.glassTooltip} />
                   <Line 
                     type="monotone" 
                     dataKey="puntos" 
                     stroke="#00f2ff" 
                     strokeWidth={4} 
-                    dot={{r: 6, fill: '#00f2ff', strokeWidth: 2, stroke: '#000'}} 
-                    activeDot={{r: 8}}
+                    dot={{r: 6, fill: '#00f2ff'}} 
                   />
                 </LineChart>
               </ResponsiveContainer>
             </div>
 
-            {/* GRÁFICA DE BARRAS: FALLOS POR MATERIA */}
             <div style={styles.glassCard}>
-              <h3 style={styles.cardTitle}>RENDIMIENTO POR MATERIA</h3>
+              <h3 style={styles.cardTitle}>PUNTOS POR MATERIA</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={datosMaterias}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="materia" stroke="#ff00ea" tick={{fontSize: 12}} />
-                  <YAxis stroke="#ff00ea" tick={{fontSize: 12}} />
+                  <XAxis dataKey="materia" stroke="#ff00ea" />
+                  <YAxis stroke="#ff00ea" />
                   <Tooltip contentStyle={styles.glassTooltip} />
                   <Bar dataKey="puntos">
                     {datosMaterias.map((entry, index) => (
@@ -114,7 +124,7 @@ const Metricas = () => {
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-              <p style={styles.alertText}>⚠️ Sectores en rojo requieren atención inmediata.</p>
+              <p style={styles.alertText}>⚠️ Sectores en rojo requieren atención.</p>
             </div>
           </div>
         )}
@@ -124,48 +134,42 @@ const Metricas = () => {
 };
 
 const styles = {
-  container: {
-    minHeight: '100vh',
-    backgroundColor: '#020204',
-    color: 'white',
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    position: 'relative',
-    overflow: 'hidden'
+  container: { 
+    minHeight: '100vh', 
+    backgroundColor: '#020204', 
+    color: 'white', 
+    fontFamily: 'sans-serif', 
+    position: 'relative', 
+    overflow: 'hidden' 
   },
-  stars: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    background: `url('https://www.transparenttextures.com/patterns/stardust.png') repeat`,
-    opacity: 0.4,
-    zIndex: 1
+  stars: { 
+    position: 'absolute', 
+    top: 0, left: 0, 
+    width: '100%', height: '100%', 
+    background: `url('https://www.transparenttextures.com/patterns/stardust.png') repeat`, 
+    opacity: 0.4, zIndex: 1 
   },
-  nebula: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    background: 'radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.08), rgba(255, 0, 234, 0.05), transparent)',
-    filter: 'blur(100px)',
-    zIndex: 2
+  nebula: { 
+    position: 'absolute', 
+    top: 0, left: 0, 
+    width: '100%', height: '100%', 
+    background: 'radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.08), rgba(255, 0, 234, 0.05), transparent)', 
+    filter: 'blur(100px)', zIndex: 2 
   },
   content: { 
     position: 'relative', 
     zIndex: 10, 
-    padding: '40px 20px',
-    maxWidth: '1200px',
-    margin: '0 auto'
+    padding: '40px 20px', 
+    maxWidth: '1200px', 
+    margin: '0 auto' 
   },
-  header: { 
-    textAlign: 'center', 
-    marginBottom: '50px' 
-  },
+  header: { textAlign: 'center', marginBottom: '50px' },
   mainTitle: { 
     fontSize: '32px', 
     fontWeight: '900', 
     color: '#00f2ff', 
-    textShadow: '0 0 20px rgba(0,242,255,0.6)',
-    letterSpacing: '3px',
-    margin: 0
+    textShadow: '0 0 20px rgba(0,242,255,0.6)', 
+    letterSpacing: '3px' 
   },
   dashboard: { 
     display: 'grid', 
@@ -177,33 +181,30 @@ const styles = {
     backdropFilter: 'blur(15px)', 
     border: '1px solid rgba(0, 242, 255, 0.2)', 
     padding: '30px', 
-    borderRadius: '25px',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+    borderRadius: '25px' 
   },
   cardTitle: { 
-    color: '#666', 
+    color: '#888', 
     fontSize: '14px', 
     letterSpacing: '4px', 
     marginBottom: '25px', 
-    textAlign: 'center',
-    textTransform: 'uppercase'
+    textAlign: 'center' 
   },
   glassTooltip: { 
     backgroundColor: 'rgba(0,0,0,0.8)', 
     border: '1px solid #00f2ff', 
-    color: '#fff',
-    borderRadius: '10px'
+    color: '#fff', 
+    borderRadius: '10px' 
   },
   alertText: { 
     fontSize: '12px', 
     color: '#ff4b2b', 
     marginTop: '20px', 
-    textAlign: 'center',
-    fontWeight: 'bold',
-    letterSpacing: '1px'
+    textAlign: 'center', 
+    fontWeight: 'bold' 
   },
   loaderContainer: { textAlign: 'center', marginTop: '150px' },
-  loader: { fontSize: '20px', letterSpacing: '8px', color: '#00f2ff', animation: 'pulse 2s infinite' }
+  loader: { fontSize: '20px', letterSpacing: '8px', color: '#00f2ff' }
 };
 
 export default Metricas;
