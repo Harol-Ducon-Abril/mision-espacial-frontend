@@ -14,7 +14,10 @@ import Registro from './components/Registro';
 import RecuperarPassword from './components/RecuperarPassword';
 import Footer from './components/Footer';
 import Metricas from './components/Metricas';
-import Diagnostico from './components/Diagnostico'
+import Diagnostico from './components/Diagnostico';
+
+// 👇 NUEVO: Importamos supabase para hacer el filtro de la semana
+import { supabase } from './supabaseClient'; 
 
 // --- CONFIGURACIÓN GLOBAL DE AXIOS ---
 axios.interceptors.request.use((config) => {
@@ -77,10 +80,38 @@ function VisorEspacial() {
 
   const obtenerDatos = async () => {
     try {
+      // 1. Traemos los datos básicos del backend (nombre, foto, etc)
       const resProgreso = await axios.get('https://mision-espacial-backend.onrender.com/api/progreso');
-      setProgreso(resProgreso.data);
       const resPremios = await axios.get('https://mision-espacial-backend.onrender.com/api/premios');
+      
       if (resPremios.data) setPremiosReales(resPremios.data);
+
+      // --- 🚀 NUEVA LÓGICA: CÁLCULO DE PUNTOS SEMANALES ---
+      const ahora = new Date();
+      const diaActual = ahora.getDay(); 
+      const diffLunes = diaActual === 0 ? -6 : 1 - diaActual;
+      const lunesActual = new Date(ahora);
+      lunesActual.setDate(ahora.getDate() + diffLunes);
+      lunesActual.setHours(0, 0, 0, 0); // Lunes a las 00:00
+
+      // Buscamos en Supabase SOLO los puntos ganados desde el lunes
+      const { data: scores } = await supabase
+        .from('daily_scores')
+        .select('points')
+        .gte('created_at', lunesActual.toISOString());
+
+      let puntosSemanaActual = 0;
+      if (scores && scores.length > 0) {
+        puntosSemanaActual = scores.reduce((acc, curr) => acc + curr.points, 0);
+      }
+
+      // Reemplazamos el total histórico por el total de esta semana
+      setProgreso({
+        ...resProgreso.data,
+        total_points: puntosSemanaActual
+      });
+      // ----------------------------------------------------
+
       setCargando(false);
     } catch (error) { 
       console.error("Error de conexión", error); 
@@ -121,7 +152,6 @@ function VisorEspacial() {
   if (cargando) return <div style={{ textAlign: 'center', color: '#66fcf1', marginTop: '100px', fontSize: '24px', fontWeight: 'bold' }}>📡 ESCANEANDO SECTOR...</div>;
 
   return (
-    // Se quitó el background radial de aquí para que se vean las estrellas globales
     <div style={{ position: 'relative', overflow: 'hidden', paddingBottom: '120px', minHeight: '100vh', zIndex: 1 }}>
       {mostrarPremioFinal && total >= 12 && <Confetti numberOfPieces={500} gravity={0.15} />}
 
@@ -150,7 +180,6 @@ function VisorEspacial() {
             {fila.map((num) => {
               const esEstacion = [12, 24, 36, 48].includes(num);
               const yaPasó = num <= total;
-              
               const esActual = (total === 0 && num === 1) || (num === total);
 
               return (
@@ -281,7 +310,7 @@ function Navigation() {
   display: 'flex', 
   justifyContent: 'center', 
   alignItems: 'center', 
-  gap: '30px', // Aumentamos un poco el espacio
+  gap: '30px', 
   boxShadow: '0 4px 15px rgba(0,0,0,0.6)', 
   position: 'relative', 
   zIndex: 1 
@@ -292,7 +321,6 @@ function Navigation() {
   
   <Link to="/metricas" style={{ color: '#82ca9d', textDecoration: 'none', fontSize: '18px', fontWeight: '900' }}>📊 MÉTRICAS</Link>
 
-  {/* 👇 NUEVO BOTÓN DE DIAGNÓSTICO ESTILO GALAXY BRAIN */}
   <Link 
     to="/diagnostico" 
     style={{ 
@@ -335,7 +363,6 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <BrowserRouter>
-      {/* SE APLICÓ EL FONDO GALÁCTICO AL CONTENEDOR PRINCIPAL */}
       <div style={{ 
         background: 'radial-gradient(circle at center, #1b2735 0%, #090a0f 100%)', 
         minHeight: '100vh', 
@@ -344,7 +371,6 @@ function App() {
         fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
         position: 'relative'
       }}>
-        {/* COMPONENTE DE ESTRELLAS DE FONDO */}
         <FondoEstrellas />
 
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', flex: 1 }}>
